@@ -232,8 +232,60 @@
 		$("#<portlet:namespace/>addUpdateResourceForm").submit();
 	}
 
+	// The "accept" attribute is only a hint for the file picker: it is bypassed
+	// by switching the dialog to "All files". These checks mirror
+	// FileValidatorUtil.validateBlueAppAttachmentFile so a rejected file is
+	// reported before the form is submitted. The server still validates.
+	var blueAppLanguages = [<%
+		for (int i = 0; i < languagesNames.size(); i++) {
+	%>"<%=languagesNames.get(i)%>"<%=i < (languagesNames.size() - 1) ? "," : ""%><%
+		}
+	%>];
+
+	var blueAppAllowedExtensions = [ "pdf", "doc", "docx", "jpg", "jpeg", "svg" ];
+	var blueAppMaxFileSize = 10 * 1024 * 1024;
+
+	function validateBlueAppAttachments() {
+		for (var i = 0; i < blueAppLanguages.length; i++) {
+			var language = blueAppLanguages[i];
+			var input = document.getElementById('<portlet:namespace/>' + language + 'attachFile');
+
+			if (!input || !input.files || input.files.length === 0) {
+				continue;
+			}
+
+			var file = input.files[0];
+			var fileName = file.name || '';
+
+			if ((fileName.split('.').length - 1) !== 1) {
+				alert('The ' + language + ' file name must contain exactly one "." character.');
+				input.focus();
+				return false;
+			}
+
+			var extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+
+			if (blueAppAllowedExtensions.indexOf(extension) === -1) {
+				alert('The ' + language + ' file type "' + extension + '" is not allowed. '
+					+ 'Allowed file types: ' + blueAppAllowedExtensions.join(', ') + '.');
+				input.focus();
+				return false;
+			}
+
+			if (file.size > blueAppMaxFileSize) {
+				alert('The ' + language + ' file exceeds the maximum allowed size of 10 MB.');
+				input.focus();
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	$('#submitBtn').click(function() {
-		openAddUpdateModal();
+		if (validateBlueAppAttachments()) {
+			openAddUpdateModal();
+		}
 	});
 </script>
 <style>
