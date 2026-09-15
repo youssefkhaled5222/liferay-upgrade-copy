@@ -502,6 +502,31 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
     }
 
     /**
+     * Returns the Documents and Media folder that holds the attachment of the
+     * given channel and language.
+     *
+     * <p>
+     * Blue App attachments are served by the Asset Management API, which finds
+     * them by the "channelName_language_attachFile" folder, so they must be
+     * uploaded there. Every other channel keeps its flat
+     * "languageattachFile" folder.
+     * </p>
+     */
+    private String resolveAttachmentFolderName(long channelId, String languageId) {
+        try {
+            Channels channel = ChannelsLocalServiceUtil.fetchChannels(channelId);
+
+            if ((channel != null) && BLUE_APP_CHANNEL_NAME.equals(channel.getName())) {
+                return channel.getName() + "_" + languageId + "_attachFile";
+            }
+        } catch (Exception e) {
+            LOG.error("Unable to resolve the channel name for channel " + channelId, e);
+        }
+
+        return languageId + "attachFile";
+    }
+
+    /**
      * Blue App assets exist only for their resource, so an approved delete also
      * removes the uploaded files from Documents and Media. Other channels keep
      * the previous behaviour and leave their files in place.
@@ -859,7 +884,7 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
 
                 // For attachment-type resources, upload files to DL and update paths
                 if ("2".equals(data.getResourceType()) && !attachmentFiles.isEmpty()) {
-                    uploadAttachmentsFromZip(data, attachmentFiles, user, importRequest);
+                    uploadAttachmentsFromZip(data, attachmentFiles, user, importRequest, channelId);
                 }
 
                 if ("add".equals(action)) {
@@ -887,7 +912,8 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
     }
 
     private void uploadAttachmentsFromZip(ResourceImportDTO.ResourceData data,
-                                          Map<String, byte[]> attachmentFiles, User user, ImportRequest importRequest) {
+                                          Map<String, byte[]> attachmentFiles, User user, ImportRequest importRequest,
+                                          long channelId) {
         if (data.getLocalizations() == null) {
             return;
         }
@@ -921,7 +947,7 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
                     LOG.warn("Attachment file not found in ZIP: " + zipEntryPath);
                     continue;
                 }
-                String folderName = languageId + "attachFile";
+                String folderName = resolveAttachmentFolderName(channelId, languageId);
                 String sourceFileName = loc.getAttachName();
 
                 try {
