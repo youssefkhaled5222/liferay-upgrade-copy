@@ -1,0 +1,8 @@
+Bundle-Name: telemoney-common-configs
+Bundle-SymbolicName: com.ejada.telemoney.common.configs
+Bundle-Version: 1.0.0
+
+Export-Package: \
+    com.ejada.telemoney.common.configs.services,\
+    com.ejada.telemoney.common.configs.configuration,\
+    com.ejada.telemoney.common.configs.enums

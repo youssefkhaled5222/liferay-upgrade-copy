@@ -1,0 +1,993 @@
+<?xml version="1.0"?>
+<!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.4.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_4_0.dtd">
+<service-builder dependency-injector="spring"
+	package-path="com.ejada.telemony.db" auto-namespace-tables="false">
+	<namespace>TM</namespace>
+
+
+	<!--<entity data-source="sampleDataSource" local-service="true" name="Foo" 
+		remote-service="false" session-factory="sampleSessionFactory" table="foo" 
+		tx-manager="sampleTransactionManager uuid="true""> -->
+	<entity name="Channels" local-service="true" table="CHANNELS"
+		data-source="extDS" cache-enabled="false" remote-service="false">
+		<column name="channelId" db-name="channelId" primary="true"
+			type="long"></column>
+		<column name="name" db-name="name" type="String"></column>
+		<column name="type" db-name="type" type="String"></column>
+		<column name="description" db-name="description" type="String"></column>
+		<column name="groupId" type="long" />
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<column name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="statusDate" type="Date" />
+		<column name="uuid_" type="String" />
+
+		<finder return-type="Collection" name="Name">
+			<finder-column name="name"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="NameAndStatus">
+			<finder-column name="name"></finder-column>
+			<finder-column name="status" comparator="!="></finder-column>
+		</finder>
+		<finder return-type="Collection" name="Status">
+			<finder-column name="status"></finder-column>
+		</finder>
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+	</entity>
+
+	<entity name="Languages" local-service="true" table="LANGUAGES"
+		data-source="extDS" cache-enabled="false">
+		<column name="languageId" db-name="languageId" primary="true"
+			type="long" />
+		<column name="channelId" db-name="channelId" type="long" />
+		<column name="langName" db-name="langName" type="String" />
+		<column name="local" db-name="local" type="String" />
+		<column name="primaryLanguage" db-name="primaryLanguage"
+			type="boolean" />
+		<column name="groupId" type="long" />
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<column name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="statusDate" type="Date" />
+		<column name="uuid_" type="String" />
+		<column name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+		<column name="version" type="int" />
+		<column name="workflowAction" type="String" />
+		<finder return-type="Collection" name="Local">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="local"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="LangName">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="langName"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="ChannelId">
+			<finder-column name="channelId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="Status">
+			<finder-column name="status"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="entityResourceId">
+			<finder-column name="entityResourceId"></finder-column>
+		</finder>
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+	</entity>
+
+	<entity name="Lovs" local-service="true" table="LOVS"
+			data-source="extDS" cache-enabled="true" remote-service="false">
+
+		<column name="id" db-name="id" primary="true" type="long"></column>
+		<column name="code" db-name="code" type="String"></column>
+		<column name="channelId" db-name="channelId" type="long"></column>
+		<column name="eventCode" db-name="eventCode" type="String"></column>
+		<column type="int" name="count" db-name="count"></column>
+
+
+		<column name="groupId" type="long" />
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<column name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="statusDate" type="Date" />
+		<column name="uuid_" type="String" />
+		<column name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+		<column name="version" type="int" />
+		<column name="workflowAction" type="String"/>
+
+		<localized-entity>
+			<localized-column name="name" db-name="name" />
+			<finder return-type="Collection" name="langId">
+				<finder-column name="languageId"></finder-column>
+			</finder>
+			<finder return-type="Collection" name="nameAndLanguageId">
+				<finder-column name="languageId"></finder-column>
+				<finder-column name="name" comparator="LIKE"></finder-column>
+			</finder>
+		</localized-entity>
+
+		<finder return-type="Collection" name="typeCodeAndStatus">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="code"></finder-column>
+			<finder-column name="status"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="typeCode">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="code"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="ChannelId">
+			<finder-column name="channelId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="idAndChannel">
+			<finder-column name="id"></finder-column>
+			<finder-column name="channelId"></finder-column>
+		</finder>
+
+		<finder name="EntityResourceId" return-type="Collection">
+			<finder-column name="entityResourceId" />
+		</finder>
+
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+
+	</entity>
+
+	<entity name="Blocks" local-service="true" table="BLOCKS"
+		data-source="extDS" cache-enabled="false" remote-service="false">
+		<column name="blockId" db-name="blockId" primary="true"
+			type="long"></column>
+		<column name="channelId" db-name="channelId" type="long"></column>
+		<column name="type" db-name="type" type="String"></column>
+		<column name="androidBlock" db-name="androidBlock"
+			type="boolean"></column>
+		<column name="androidBlockVersion"
+			db-name="androidBlockVersion" type="String"></column>
+		<column name="androidBlockFrom" db-name="androidBlockFrom"
+			type="Date"></column>
+		<column name="androidBlockTo" db-name="androidBlockTo"
+			type="Date"></column>
+		<column name="iosBlock" db-name="iosBlock" type="boolean"></column>
+		<column name="iosBlockVersion" db-name="iosBlockVersion"
+			type="String"></column>
+		<column name="iosBlockFrom" db-name="iosBlockFrom" type="Date"></column>
+		<column name="iosBlockTo" db-name="iosBlockTo" type="Date"></column>
+		<column name="webBlock" db-name="webBlock" type="boolean"></column>
+		<column name="webBlockVersion" db-name="webBlockVersion"
+			type="String"></column>
+		<column name="webBlockFrom" db-name="webBlockFrom" type="Date"></column>
+		<column name="webBlockTo" db-name="webBlockTo" type="Date"></column>
+
+
+		<finder return-type="Collection" name="ChannelId">
+			<finder-column name="channelId"></finder-column>
+		</finder>
+
+
+	</entity>
+
+	<entity name="LovData" local-service="true" table="LOVDATA"
+			data-source="extDS" cache-enabled="true" remote-service="false">
+
+		<column name="id" db-name="id" primary="true" type="long" />
+		<column name="lovId" type="long" db-name="lov_id" />
+		<column name="lovType" type="String" db-name="lov_type" />
+		<column name="recordTypeCode" type="String"
+				db-name="record_type_Code" />
+		<column name="recordShortDescription" type="String"
+				db-name="record_short_description" />
+
+		<column name="status" db-name="status" type="int" />
+		<column name="originalEntityId" db-name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+
+		<localized-entity>
+			<localized-column name="recordDescription"
+							  db-name="recordDescription" />
+			<localized-column name="lovIdLocalization"
+							  db-name="lov_id" />
+
+			<finder return-type="Collection" name="langId">
+				<finder-column name="languageId"></finder-column>
+			</finder>
+
+			<finder return-type="Collection" name="LovsId">
+				<finder-column name="lovIdLocalization"></finder-column>
+				<finder-column name="languageId"></finder-column>
+			</finder>
+
+			<finder return-type="Collection"
+					name="descriptionAndLanguageId">
+				<finder-column name="id"></finder-column>
+				<finder-column name="languageId"></finder-column>
+				<finder-column name="recordDescription"
+							   comparator="LIKE"></finder-column>
+			</finder>
+		</localized-entity>
+
+		<finder return-type="Collection" name="Lovdata">
+			<finder-column name="lovId"></finder-column>
+		</finder>
+
+		<finder return-type="Collection"
+				name="lovIdAndRecordShortDescription">
+			<finder-column name="lovId"></finder-column>
+			<finder-column name="recordShortDescription"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="DataTypeCodeAndLovCodeAndStatus">
+			<finder-column name="lovType"></finder-column>
+			<finder-column name="recordTypeCode"></finder-column>
+			<finder-column name="entityResourceId"></finder-column>
+			<finder-column name="status"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="EntityResourceId">
+			<finder-column name="entityResourceId"></finder-column>
+		</finder>
+
+	</entity>
+
+	<entity name="Persona" local-service="true" table="PERSONA"
+		data-source="extDS" cache-enabled="false">
+		<column name="personaId" db-name="personaId" primary="true"
+			type="long" />
+		<column name="channelId" db-name="channelId" type="long" />
+		<column name="darkThemeId" db-name="darkThemeId" type="Long" />
+		<column name="lightThemeId" db-name="lightThemeId" type="Long" />
+		<column name="name" db-name="name" type="String" />
+		<column name="startAge" db-name="startAge" type="int" />
+		<column name="endAge" db-name="endAge" type="int" />
+		<column name="nationality" db-name="nationality" type="String" />
+		<column name="customerSegment" db-name="customerSegment"
+			type="String" />
+		<column name="personaStatus" db-name="personaStatus" type="String" />
+
+		<column name="sector" db-name="sector" type="String" />
+		<column name="minIncome" db-name="minIncome" type="int" />
+		<column name="maxIncome" db-name="maxIncome" type="int" />
+
+		<column name="description" db-name="description" type="String" />
+		<column name="gender" db-name="gender" type="String" />
+		<column name="priority" db-name="priority" type="int" />
+
+		<column name="dateFrom" db-name="dateFrom" type="Date" />
+		<column name="dateTo" db-name="dateTo" type="Date" />
+
+		<column name="defaultPersona" db-name="defaultPersona"
+			type="boolean" />
+		<column name="groupId" type="long" />
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<column name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="statusDate" type="Date" />
+		<column name="uuid_" type="String" />
+		<column name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+		<column name="version" type="int" />
+		<column name="workflowAction" type="String" />
+
+
+		<finder return-type="Collection" name="lightThemeAndStatus">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="lightThemeId"></finder-column>
+			<finder-column name="status"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="darkThemeAndStatus">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="darkThemeId"></finder-column>
+			<finder-column name="status"></finder-column>
+
+		</finder>
+
+		<finder return-type="Collection" name="ChannelIdAndStatus">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="status"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="defaultPersonaAndStatus">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="defaultPersona"></finder-column>
+			<finder-column name="status"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="entityResourceId">
+			<finder-column name="entityResourceId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="entityResourceIdAndStatus">
+			<finder-column name="entityResourceId"></finder-column>
+			<finder-column name="status"></finder-column>
+		</finder>
+
+
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+
+	</entity>
+
+	<entity name="UserLogs" local-service="true" table="USER_LOGS"
+		data-source="extDS" cache-enabled="false">
+		<column name="logsId" db-name="logsId" primary="true"
+			type="long" />
+		<column name="userName" db-name="userName" type="String" />
+		<column name="userActivity" db-name="userActivity"
+			type="String" />
+		<column name="logTime" db-name="logTime" type="Date" />
+		<column name="channelId" db-name="channelId" type="long" />
+
+		<finder return-type="Collection" name="ChannelId">
+			<finder-column name="channelId"></finder-column>
+		</finder>
+
+	</entity>
+
+	<entity name="Themes" local-service="true" table="THEMES"
+		data-source="extDS" cache-enabled="false">
+		<column name="themeId" db-name="themeId" primary="true"
+			type="long" />
+		<column name="channelId" db-name="channelId" type="long" />
+		<column name="themeEnName" db-name="themeEnName" type="String" />
+		<column name="themeArName" db-name="themeArName" type="String" />
+		<column name="darkTheme" db-name="darkTheme" type="boolean" />
+		<column name="primaryColors" db-name="primaryColors"
+			type="String" />
+		<column name="secondaryColors" db-name="secondaryColors"
+			type="String" />
+		<column name="neutralColors" db-name="neutralColors"
+			type="String" />
+		<column name="successColors" db-name="successColors"
+			type="String" />
+		<column name="errorColors" db-name="errorColors" type="String" />
+		<column name="warningColors" db-name="warningColors"
+			type="String" />
+		<column name="supportColors" db-name="supportColors"
+			type="String" />
+		<column name="gradientColors" db-name="gradientColors"
+			type="String" />
+		<column name="splashBg" db-name="splashBg" type="String" />
+		<column name="splashAnimation" db-name="splashAnimation"
+			type="String" />
+		<column name="headerBg" db-name="headerBg" type="String" />
+		<column name="balanceBg" db-name="balanceBg" type="String" />
+		<column name="defaultTheme" db-name="defaultTheme"
+			type="boolean" />
+
+		<!-- Workflow/versioning columns (aligned with Persona) -->
+		<column name="groupId" type="long" />
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<column name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="statusDate" type="Date" />
+		<column name="uuid_" type="String" />
+		<column name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+		<column name="version" type="int" />
+		<column name="workflowAction" type="String" />
+		<column name="importRequestId"  db-name="importRequestId"  type="long" />
+
+
+		<finder return-type="Collection" name="darkTheme">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="darkTheme"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="DefaultTheme">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="defaultTheme"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="DefaultModeTheme">
+			<finder-column name="defaultTheme"></finder-column>
+			<finder-column name="darkTheme"></finder-column>
+			<finder-column name="channelId"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="ChannelId">
+			<finder-column name="channelId"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="ChannelIdAndStatus">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="status"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="entityResourceId">
+			<finder-column name="entityResourceId"></finder-column>
+		</finder>
+
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+	</entity>
+
+	<entity name="Banner" local-service="true" table="BANNER"
+		data-source="extDS" cache-enabled="false">
+		<column name="bannerId" db-name="bannerId" primary="true"
+			type="long" />
+		<column name="channelId" db-name="channelId" type="long" />
+		<column name="bannerName" db-name="bannerName" type="String" />
+		<column name="bannerType" db-name="bannerType" type="String" />
+		<column name="container" db-name="container" type="String" />
+		<column name="dateFrom" db-name="" type="Date" />
+		<column name="dateTo" db-name="" type="Date" />
+		<column name="blockId" db-name="blockId" type="long" />
+		<column name="persona" db-name="persona" type="String" />
+
+		<column name="groupId" type="long" />
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<column name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="statusDate" type="Date" />
+		<column name="uuid_" type="String" />
+		<column name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+		<column name="version" type="int" />
+		<column name="workflowAction" type="String"/>
+		<column name="importRequestId"  db-name="importRequestId"  type="long" />
+
+
+
+		<finder return-type="Collection" name="ChannelIdAndStatus">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="status"></finder-column>
+		</finder>
+
+		<finder name="EntityResourceId" return-type="Collection">
+			<finder-column name="entityResourceId" />
+		</finder>
+
+
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+
+	</entity>
+
+	<entity name="BannerContent" local-service="true"
+		table="BANNER_CONTENT" data-source="extDS" cache-enabled="false">
+		<column name="contentId" db-name="contentId" primary="true"
+			type="long" />
+		<column name="contentName" db-name="contentName" type="String" />
+		<column name="contentOrder" db-name="contentOrder" type="int" />
+		<column name="bannerId" db-name="bannerId" type="long" />
+		<column name="contentStatus" db-name="contentStatus" type="String" />
+		<column name="channelId" db-name="channelId" type="long" />
+		<column name="status" db-name="status" type="int" />
+		<column name="originalEntityId" db-name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+
+		<localized-entity>
+			<column name="bannerImage" type="String" />
+			<column name="imageOverlay" type="String" />
+			<column name="linkType" type="String" />
+			<column name="url" type="String" />
+			<localized-column name="titleValue" />
+			<localized-column name="descriptionValue" />
+			<finder return-type="Collection" name="Language">
+				<finder-column name="languageId"></finder-column>
+			</finder>
+		</localized-entity>
+
+		<finder return-type="Collection" name="BannerId">
+			<finder-column name="bannerId"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="EntityResourceId">
+			<finder-column name="entityResourceId"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="BannerIdAndStatus">
+			<finder-column name="bannerId"></finder-column>
+			<finder-column name="status"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="ChannelId">
+			<finder-column name="channelId"></finder-column>
+		</finder>
+	</entity>
+
+	<entity name="Localization" local-service="true"
+		table="LOCALIZATION" data-source="extDS" cache-enabled="false">
+		<column name="localizationId" db-name="localizationId"
+			primary="true" type="long" />
+		<column name="localValue" db-name="localValue" type="String" />
+		<column name="version" db-name="version" type="long" />
+		<column name="languageId" db-name="languageId" type="long" />
+		<column name="userName" db-name="userName" type="String" />
+		<column name="channelId" db-name="channelId" type="long" />
+		<column name="featureId" db-name="featureId" type="long" />
+		<column name="groupId" db-name="groupId" type="long" />
+		<column name="companyId" db-name="companyId" type="long" />
+		<column name="userId" db-name="userId" type="long" />
+		<column name="createDate" db-name="createDate" type="Date" />
+		<column name="modifiedDate" db-name="modifiedDate" type="Date" />
+		<column name="status" db-name="status" type="int" />
+		<column name="statusByUserId" db-name="statusByUserId" type="long" />
+		<column name="statusByUserName" db-name="statusByUserName" type="String" />
+		<column name="statusDate" db-name="statusDate" type="Date" />
+		<column name="uuid_" db-name="uuid_" type="String" />
+		<column name="originalEntityId" db-name="originalEntityId" type="long" />
+		<column name="entityResourceId" db-name="entityResourceId" type="long" />
+		<column name="workflowBatchId" db-name="workflowBatchId" type="String" />
+		<column name="globalVersion" db-name="globalVersion" type="long" />
+		<column name="importRequestId"  db-name="importRequestId"  type="long" />
+
+		<finder return-type="Collection" name="ChannelId_LanguageId_GlobalVersion">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="languageId"></finder-column>
+			<finder-column name="globalVersion"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="WorkflowBatchId">
+			<finder-column name="workflowBatchId"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="ChannelId">
+			<finder-column name="channelId"></finder-column>
+		</finder>
+
+
+		<finder return-type="Collection" name="entityResourceId">
+			<finder-column name="entityResourceId"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="FeatureId">
+			<finder-column name="featureId"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="ChannelId_FeatureId">
+			<finder-column name="channelId"></finder-column>
+			<finder-column name="featureId"></finder-column>
+		</finder>
+
+
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+	</entity>
+
+	<entity name="Feature" local-service="true" table="FEATURE"
+		data-source="extDS" cache-enabled="false">
+		<column name="featureId" db-name="featureId" primary="true"
+			type="long" />
+		<column name="featureName" db-name="featureName" type="String" />
+		<column name="pageType" db-name="pageType" type="String" />
+		<column name="parentPage" db-name="parentPage" type="long" />
+		<column name="routeId" db-name="routeId" type="String" />
+		<column name="featureStatus" db-name="featureStatus" type="Boolean" />
+		<column name="blockId" db-name="blockId" type="long" />
+		<column name="channelId" db-name="channelId" type="long" />
+
+		<column name="groupId" type="long" />
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<column name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="statusDate" type="Date" />
+		<column name="uuid_" type="String" />
+		<column name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+		<column name="childResourceId" type="long" />
+		<column name="version" type="int" />
+		<column name="workflowAction" type="String"/>
+
+
+
+		<finder return-type="Collection" name="ChannelId">
+			<finder-column name="channelId"></finder-column>
+		</finder>
+		
+		<finder return-type="Collection" name="FeatureId">
+			<finder-column name="parentPage"></finder-column>
+		</finder>
+
+		<finder name="EntityResourceId" return-type="Collection">
+			<finder-column name="entityResourceId" />
+		</finder>
+
+		<finder name="ChildResourceId" return-type="Collection">
+			<finder-column name="childResourceId" />
+		</finder>
+
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+
+	</entity>
+
+	<entity name="Segment" local-service="true" table="SEGMENT"
+		data-source="extDS" cache-enabled="false">
+		<column name="segmentId" db-name="segmentId" primary="true"
+			type="long" />
+		<column name="featureId" db-name="featureId" type="long" />
+		<column name="name" db-name="name" type="String" />
+		<column name="segmentStatus" db-name="segmentStatus" type="Boolean" />
+		<column name="method" db-name="method" type="String" />
+		<column name="popUpTitle" db-name="popUpTitle" type="String" />
+		<column name="popUpSubTitle" db-name="popUpSubTitle"
+			type="String" />
+		<column name="status" db-name="status" type="int" />
+		<column name="originalEntityId" db-name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+		<column name="childResourceId" type="long" />
+
+
+		<finder return-type="Collection" name="EntityResourceId">
+			<finder-column name="entityResourceId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="childResourceId">
+			<finder-column name="childResourceId"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="featureSegments">
+			<finder-column name="featureId"></finder-column>
+		</finder>
+	</entity>
+
+	<entity name="Resource" local-service="true" table="Resource"
+		data-source="extDS" cache-enabled="false">
+		<column name="resourceId" db-name="resourceId" primary="true"
+			type="long" />
+		<column name="channelId" db-name="channelId" type="long" />
+		<column name="resourceCode" db-name="resourceCode"
+			type="String" />
+		<column name="resourceType" db-name="resourceType"
+			type="String" />
+		<column name="urlType" db-name="urlType" type="String" />
+		<column name="groupId" type="long" />
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<column name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="statusDate" type="Date" />
+		<column name="uuid_" type="String" />
+		<column name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+		<column name="version" type="int" />
+		<column name="workflowAction" type="String" />
+		<column name="featureId" db-name="featureId" type="long" />
+
+		<localized-entity>
+			<localized-column name="name" />
+			<localized-column name="attachName" />
+			<localized-column name="attach" />
+			<localized-column name="description" />
+			<localized-column name="routeId" />
+			<localized-column name="url" />
+			<finder return-type="Collection" name="Language">
+				<finder-column name="languageId"></finder-column>
+			</finder>
+			<finder return-type="Collection" name="nameAndLanguageId">
+				<finder-column name="languageId"></finder-column>
+				<finder-column name="name" comparator="LIKE"></finder-column>
+			</finder>
+		</localized-entity>
+
+		<finder return-type="Collection" name="ChannelId">
+			<finder-column name="channelId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="ResourceCode">
+			<finder-column name="resourceCode"></finder-column>
+			<finder-column name="channelId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="ResourceType">
+			<finder-column name="resourceType"></finder-column>
+			<finder-column name="channelId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="entityResourceId">
+			<finder-column name="entityResourceId"></finder-column>
+		</finder>
+
+
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+	</entity>
+
+
+
+
+	<entity name="AppVersion" local-service="true" table="AppVersion"
+			data-source="extDS" cache-enabled="false">
+
+
+		<column name="versionId" db-name="versionId" primary="true"
+				type="long" />
+
+
+		<column name="channelId" db-name="channelId" type="long" />
+		<column name="platform" db-name="platform" type="String" />
+		<column name="versionNumber" db-name="versionNumber" type="String" />
+		<column name="url" db-name="url" type="String" />
+		<!-- business status retained (previously named status) -->
+		<column name="appVersionStatus" db-name="appVersionStatus" type="Boolean" />
+		<!-- workflow/audit fields to align with Persona workflow handling -->
+		<column name="groupId" type="long" />
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<column name="status" db-name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="statusDate" type="Date" />
+		<column name="uuid_" type="String" />
+		<column name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+		<column name="version" type="int" />
+		<column name="workflowAction" type="String" />
+		<finder return-type="Collection" name="ChannelId">
+			<finder-column name="channelId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="Platform">
+			<finder-column name="platform"></finder-column>
+			<finder-column name="channelId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="WorkflowStatus">
+			<finder-column name="status"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="EntityResourceId">
+			<finder-column name="entityResourceId"></finder-column>
+		</finder>
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+
+	</entity>
+
+	<entity name="AppEnvironment" local-service="true" table="AppEnvironment"
+			data-source="extDS" cache-enabled="false">
+
+
+		<column name="environmentId" db-name="environmentId" primary="true"
+				type="long" />
+
+
+		<column name="channelId" db-name="channelId" type="long" />
+		<column name="environmentName" type="String" />
+		<column name="groupId" type="long" />
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="status" db-name="status" type="int" />
+		<column name="statusDate" type="Date" />
+		<column name="uuid_" type="String" />
+		<column name="originalEntityId" type="long" />
+		<column name="entityResourceId" type="long" />
+		<column name="version" type="int" />
+		<column name="workflowAction" type="String" />
+		<finder return-type="Collection" name="ChannelId">
+			<finder-column name="channelId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="WorkflowStatus">
+			<finder-column name="status"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="EntityResourceId">
+			<finder-column name="entityResourceId"></finder-column>
+		</finder>
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+
+	</entity>
+
+	<entity name="AppConfigItem" local-service="true" table="AppConfigItem"
+			data-source="extDS" cache-enabled="false">
+
+
+		<column name="configItemId" db-name="configItemId" primary="true"
+				type="long" />
+
+
+		<column name="environmentId" db-name="environmentId" type="long" />
+		<column name="keyName" type="String" />
+		<column name="valueType" type="String" />
+		<column name="value" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<finder return-type="Collection" name="environmentId">
+			<finder-column name="environmentId"></finder-column>
+		</finder>
+	</entity>
+
+
+	<entity name="CustomWebContent" local-service="true"
+		remote-service="true">
+	</entity>
+
+	<entity data-source="extDS" local-service="true"
+		name="ErrorCode" remote-service="false" uuid="false"
+		cache-enabled="false">
+	</entity>
+
+	<entity data-source="extDS" local-service="true" name="SMS"
+		remote-service="false" uuid="false" cache-enabled="false">
+	</entity>
+
+	<entity data-source="extDS" local-service="true"
+		name="NonCustomer" remote-service="false" uuid="false"
+		cache-enabled="false">
+	</entity>
+
+	<entity data-source="extDS" local-service="true" name="ESB"
+		remote-service="false" uuid="false" cache-enabled="false">
+	</entity>
+
+	<entity data-source="extDS" local-service="true" name="OTP"
+		remote-service="false" uuid="false" cache-enabled="false">
+	</entity>
+
+	<entity data-source="extDS" local-service="true"
+		name="Configuration" remote-service="false" uuid="false"
+		cache-enabled="false">
+	</entity>
+
+	<entity data-source="extDS" local-service="true" name="IVR"
+		remote-service="false" uuid="false" cache-enabled="false">
+	</entity>
+
+	<entity data-source="extDS" local-service="true" name="Biller"
+		remote-service="false" uuid="false" cache-enabled="false">
+	</entity>
+	
+
+	<entity data-source="extDS" local-service="true" name="MOI" remote-service="false" 
+	uuid="false" cache-enabled="false" >
+	</entity>
+
+	<entity data-source="extDS" local-service="true" name="WhiteList"
+		remote-service="false" uuid="false" cache-enabled="false">
+
+	</entity>
+
+
+	<entity name="ConfigurationEntity" local-service="true" table="ConfigurationEntity"
+			data-source="extDS" cache-enabled="false">
+		<column name="id" db-name="id" primary="true" type="long" />
+		<column name="url" db-name="url" type="String" />
+		<column name="oldData" db-name="oldData" type="String" />
+		<column name="newData" db-name="newData" type="String" />
+		<column name="entityType" db-name="entityType" type="String" />
+		<column name="entityId" db-name="entityId" type="String" />
+		<column name="groupId" type="long" />
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+		<column name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="statusDate" type="Date" />
+		<column name="uuid_" type="String" />
+		<column name="workflowAction" type="String"/>
+
+		<finder return-type="Collection" name="entityId">
+			<finder-column name="entityId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="entityIdAndType">
+			<finder-column name="entityId"></finder-column>
+			<finder-column name="entityType"></finder-column>
+		</finder>
+
+		<finder return-type="Collection" name="entityTypeAndStatus">
+			<finder-column name="entityType" />
+			<finder-column name="status" />
+		</finder>
+
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+	</entity>
+
+
+	<entity name="ImportRequest" local-service="true" table="ImportRequest"
+			data-source="extDS" cache-enabled="false">
+		<column name="id" db-name="id" primary="true" type="long"/>
+		<column name="type" db-name="type" type="String"/>
+		<column name="fileName" db-name="fileName" type="String"/>
+		<column name="filePath" db-name="filePath" type="String"/>
+		<column name="groupId" type="long"/>
+		<column name="companyId" type="long"/>
+		<column name="userId" type="long"/>
+		<column name="userName" type="String"/>
+		<column name="createDate" type="Date"/>
+		<column name="modifiedDate" type="Date"/>
+		<column name="status" type="int"/>
+		<column name="statusByUserId" type="long"/>
+		<column name="statusByUserName" type="String"/>
+		<column name="statusDate" type="Date"/>
+		<column name="uuid_" type="String"/>
+
+		<finder return-type="Collection" name="typeAndStatus">
+			<finder-column name="type" />
+			<finder-column name="status" />
+		</finder>
+
+		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink"></reference>
+
+	</entity>
+
+
+	<entity name="FeatureLovMap" local-service="true" table="FeatureLovMap"
+	        data-source="extDS" cache-enabled="false">
+		<column name="id" db-name="id" primary="true" type="long"/>
+		<column name="featureId" db-name="featureId" type="long"/>
+		<column name="featureEntityResourceId" db-name="featureEntityResourceId" type="long"/>
+		<column name="lovEntityResourceId" db-name="lovEntityResourceId" type="long"/>
+		<column name="lovDataCode" db-name="lovDataCode" type="String"/>
+		<column name="lovType" db-name="lovType" type="String"/>
+		<finder return-type="Collection" name="FeatureId">
+			<finder-column name="featureId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="FeatureEntityResourceId">
+			<finder-column name="featureEntityResourceId"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="FeatureIdAndLovType">
+			<finder-column name="featureId"></finder-column>
+			<finder-column name="lovType"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="FeatureEntityResourceIdAndLovType">
+			<finder-column name="featureEntityResourceId"></finder-column>
+			<finder-column name="lovType"></finder-column>
+		</finder>
+		<finder return-type="Collection" name="LovEntityResourceIdAndLovDataCode">
+			<finder-column name="lovEntityResourceId"></finder-column>
+			<finder-column name="lovDataCode"></finder-column>
+		</finder>
+	</entity>
+
+	<!-- User Story 5: Global Component Versioning.
+	     One internal version per company, channel and component. The version is
+	     incremented by 1 only after an approved component change. -->
+	<entity name="GlobalVersion" local-service="true" table="GlobalVersion"
+			data-source="extDS" cache-enabled="false" remote-service="false">
+
+		<column name="versionId" db-name="versionId" primary="true"
+				type="long" />
+		<column name="companyId" db-name="companyId" type="long" />
+		<column name="channelId" db-name="channelId" type="long" />
+		<column name="componentName" db-name="componentName" type="String" />
+		<column name="version" db-name="version" type="long" />
+		<column name="modifiedDate" db-name="modifiedDate" type="Date" />
+
+		<!-- Unique key: UNIQUE(companyId, channelId, componentName).
+		     A finder whose return-type is the entity itself makes Service
+		     Builder generate a UNIQUE index for these columns. -->
+		<finder return-type="GlobalVersion" name="C_C_C">
+			<finder-column name="companyId" />
+			<finder-column name="channelId" />
+			<finder-column name="componentName" />
+		</finder>
+
+		<finder return-type="Collection" name="CompanyId">
+			<finder-column name="companyId" />
+		</finder>
+	</entity>
+
+
+</service-builder>
+

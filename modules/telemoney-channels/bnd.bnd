@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-channels
+Bundle-SymbolicName: com.ejada.telemoney.channels
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.channels.constants

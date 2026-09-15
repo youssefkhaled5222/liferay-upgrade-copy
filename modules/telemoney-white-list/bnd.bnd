@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-white-list
+Bundle-SymbolicName: com.ejada.telemoney.whiteList
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.whiteList.constants

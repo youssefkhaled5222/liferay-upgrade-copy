@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-languages
+Bundle-SymbolicName: com.ejada.telemoney.languages
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.languages.constants

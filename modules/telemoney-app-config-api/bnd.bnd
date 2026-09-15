@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-app-config-api
+Bundle-SymbolicName: com.ejada.telemoney.appConfigAPI
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.appConfigAPI.api

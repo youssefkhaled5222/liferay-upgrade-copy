@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-esb-constant
+Bundle-SymbolicName: com.ejada.telemoney.telemoney.esb.constant
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.telemoney.esb.constant.constants

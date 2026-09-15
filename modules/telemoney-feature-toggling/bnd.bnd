@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-feature-toggling
+Bundle-SymbolicName: com.ejada.telemoney.feature.toggling
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.feature.toggling.constants

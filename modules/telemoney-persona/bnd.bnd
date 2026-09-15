@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-persona
+Bundle-SymbolicName: com.ejada.telemoney.persona
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.persona.constants

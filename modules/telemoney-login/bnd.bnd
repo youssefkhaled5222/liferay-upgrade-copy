@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-login
+Bundle-SymbolicName: com.ejada.telemoney.login
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.login.constants

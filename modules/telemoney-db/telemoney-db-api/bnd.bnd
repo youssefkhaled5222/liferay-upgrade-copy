@@ -1,0 +1,15 @@
+Bundle-Name: telemoney-db-api
+Bundle-SymbolicName: com.ejada.telemony.db.api
+Bundle-Version: 1.0.0
+Export-Package: \
+	com.ejada.telemony.db.exception,\
+	com.ejada.telemony.db.model,\
+	com.ejada.telemony.db.service,\
+	com.ejada.telemony.db.service.persistence,\
+	com.ejada.telemoney.db.constants,\
+	com.ejada.telemoney.db.domain.model,\
+    com.ejada.telemoney.db.dto,\
+    com.ejada.telemoney.db.dto.importDtos,\
+    com.ejada.telemoney.db.utils
+-check: EXPORTS
+-includeresource: META-INF/service.xml=../telemoney-db-service/service.xml

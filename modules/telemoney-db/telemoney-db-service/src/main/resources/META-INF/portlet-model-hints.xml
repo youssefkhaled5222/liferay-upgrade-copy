@@ -1,0 +1,445 @@
+<?xml version="1.0"?>
+
+<model-hints>
+	<model name="com.ejada.telemony.db.model.AppConfigItem">
+		<field name="configItemId" type="long" />
+		<field name="environmentId" type="long" />
+		<field name="keyName" type="String" />
+		<field name="valueType" type="String" />
+		<field name="value" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+	</model>
+	<model name="com.ejada.telemony.db.model.AppEnvironment">
+		<field name="environmentId" type="long" />
+		<field name="channelId" type="long" />
+		<field name="environmentName" type="String" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="status" type="int" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+		<field name="version" type="int" />
+		<field name="workflowAction" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.AppVersion">
+		<field name="versionId" type="long" />
+		<field name="channelId" type="long" />
+		<field name="platform" type="String" />
+		<field name="versionNumber" type="String" />
+		<field name="url" type="String" />
+		<field name="appVersionStatus" type="Boolean" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+		<field name="version" type="int" />
+		<field name="workflowAction" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.Banner">
+		<field name="bannerId" type="long" />
+		<field name="channelId" type="long" />
+		<field name="bannerName" type="String" />
+		<field name="bannerType" type="String" />
+		<field name="container" type="String" />
+		<field name="dateFrom" type="Date" />
+		<field name="dateTo" type="Date" />
+		<field name="blockId" type="long" />
+		<field name="persona" type="String" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+		<field name="version" type="int" />
+		<field name="workflowAction" type="String" />
+		<field name="importRequestId" type="long" />
+	</model>
+	<model name="com.ejada.telemony.db.model.BannerContent">
+		<field name="defaultLanguageId" type="String" />
+		<field name="contentId" type="long" />
+		<field name="contentName" type="String" />
+		<field name="contentOrder" type="int" />
+		<field name="bannerId" type="long" />
+		<field name="contentStatus" type="String" />
+		<field name="channelId" type="long" />
+		<field name="status" type="int" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+	</model>
+	<model name="com.ejada.telemony.db.model.BannerContentLocalization">
+		<field name="mvccVersion" type="long" />
+		<field name="bannerContentLocalizationId" type="long" />
+		<field name="contentId" type="long" />
+		<field name="languageId" type="String" />
+		<field name="bannerImage" type="String" />
+		<field name="imageOverlay" type="String" />
+		<field name="linkType" type="String" />
+		<field name="url" type="String" />
+		<field name="titleValue" type="String" />
+		<field name="descriptionValue" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.Blocks">
+		<field name="blockId" type="long" />
+		<field name="channelId" type="long" />
+		<field name="type" type="String" />
+		<field name="androidBlock" type="boolean" />
+		<field name="androidBlockVersion" type="String" />
+		<field name="androidBlockFrom" type="Date" />
+		<field name="androidBlockTo" type="Date" />
+		<field name="iosBlock" type="boolean" />
+		<field name="iosBlockVersion" type="String" />
+		<field name="iosBlockFrom" type="Date" />
+		<field name="iosBlockTo" type="Date" />
+		<field name="webBlock" type="boolean" />
+		<field name="webBlockVersion" type="String" />
+		<field name="webBlockFrom" type="Date" />
+		<field name="webBlockTo" type="Date" />
+	</model>
+	<model name="com.ejada.telemony.db.model.Channels">
+		<field name="channelId" type="long" />
+		<field name="name" type="String" />
+		<field name="type" type="String" />
+		<field name="description" type="String" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.ConfigurationEntity">
+		<field name="id" type="long" />
+		<field name="url" type="String" />
+		<field name="oldData" type="String" />
+		<field name="newData" type="String" />
+		<field name="entityType" type="String" />
+		<field name="entityId" type="String" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+		<field name="workflowAction" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.Feature">
+		<field name="featureId" type="long" />
+		<field name="featureName" type="String" />
+		<field name="pageType" type="String" />
+		<field name="parentPage" type="long" />
+		<field name="routeId" type="String" />
+		<field name="featureStatus" type="Boolean" />
+		<field name="blockId" type="long" />
+		<field name="channelId" type="long" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+		<field name="childResourceId" type="long" />
+		<field name="version" type="int" />
+		<field name="workflowAction" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.FeatureLovMap">
+		<field name="id" type="long" />
+		<field name="featureId" type="long" />
+		<field name="featureEntityResourceId" type="long" />
+		<field name="lovEntityResourceId" type="long" />
+		<field name="lovDataCode" type="String" />
+		<field name="lovType" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.GlobalVersion">
+		<field name="versionId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="channelId" type="long" />
+		<field name="componentName" type="String" />
+		<field name="version" type="long" />
+		<field name="modifiedDate" type="Date" />
+	</model>
+	<model name="com.ejada.telemony.db.model.ImportRequest">
+		<field name="id" type="long" />
+		<field name="type" type="String" />
+		<field name="fileName" type="String" />
+		<field name="filePath" type="String" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.Languages">
+		<field name="languageId" type="long" />
+		<field name="channelId" type="long" />
+		<field name="langName" type="String" />
+		<field name="local" type="String" />
+		<field name="primaryLanguage" type="boolean" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+		<field name="version" type="int" />
+		<field name="workflowAction" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.Localization">
+		<field name="localizationId" type="long" />
+		<field name="localValue" type="String" />
+		<field name="version" type="long" />
+		<field name="languageId" type="long" />
+		<field name="userName" type="String" />
+		<field name="channelId" type="long" />
+		<field name="featureId" type="long" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+		<field name="workflowBatchId" type="String" />
+		<field name="globalVersion" type="long" />
+		<field name="importRequestId" type="long" />
+	</model>
+	<model name="com.ejada.telemony.db.model.LovData">
+		<field name="defaultLanguageId" type="String" />
+		<field name="id" type="long" />
+		<field name="lovId" type="long" />
+		<field name="lovType" type="String" />
+		<field name="recordTypeCode" type="String" />
+		<field name="recordShortDescription" type="String" />
+		<field name="status" type="int" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+	</model>
+	<model name="com.ejada.telemony.db.model.LovDataLocalization">
+		<field name="mvccVersion" type="long" />
+		<field name="lovDataLocalizationId" type="long" />
+		<field name="id" type="long" />
+		<field name="languageId" type="String" />
+		<field name="recordDescription" type="String" />
+		<field name="lovIdLocalization" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.Lovs">
+		<field name="defaultLanguageId" type="String" />
+		<field name="id" type="long" />
+		<field name="code" type="String" />
+		<field name="channelId" type="long" />
+		<field name="eventCode" type="String" />
+		<field name="count" type="int" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+		<field name="version" type="int" />
+		<field name="workflowAction" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.LovsLocalization">
+		<field name="mvccVersion" type="long" />
+		<field name="lovsLocalizationId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="id" type="long" />
+		<field name="languageId" type="String" />
+		<field name="name" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.Persona">
+		<field name="personaId" type="long" />
+		<field name="channelId" type="long" />
+		<field name="darkThemeId" type="Long" />
+		<field name="lightThemeId" type="Long" />
+		<field name="name" type="String" />
+		<field name="startAge" type="int" />
+		<field name="endAge" type="int" />
+		<field name="nationality" type="String" />
+		<field name="customerSegment" type="String" />
+		<field name="personaStatus" type="String" />
+		<field name="sector" type="String" />
+		<field name="minIncome" type="int" />
+		<field name="maxIncome" type="int" />
+		<field name="description" type="String" />
+		<field name="gender" type="String" />
+		<field name="priority" type="int" />
+		<field name="dateFrom" type="Date" />
+		<field name="dateTo" type="Date" />
+		<field name="defaultPersona" type="boolean" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+		<field name="version" type="int" />
+		<field name="workflowAction" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.Resource">
+		<field name="defaultLanguageId" type="String" />
+		<field name="resourceId" type="long" />
+		<field name="channelId" type="long" />
+		<field name="resourceCode" type="String" />
+		<field name="resourceType" type="String" />
+		<field name="urlType" type="String" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+		<field name="version" type="int" />
+		<field name="workflowAction" type="String" />
+		<field name="featureId" type="long" />
+	</model>
+	<model name="com.ejada.telemony.db.model.ResourceLocalization">
+		<field name="mvccVersion" type="long" />
+		<field name="resourceLocalizationId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="resourceId" type="long" />
+		<field name="languageId" type="String" />
+		<field name="name" type="String" />
+		<field name="attachName" type="String" />
+		<field name="attach" type="String" />
+		<field name="description" type="String" />
+		<field name="routeId" type="String" />
+		<field name="url" type="String" />
+	</model>
+	<model name="com.ejada.telemony.db.model.Segment">
+		<field name="segmentId" type="long" />
+		<field name="featureId" type="long" />
+		<field name="name" type="String" />
+		<field name="segmentStatus" type="Boolean" />
+		<field name="method" type="String" />
+		<field name="popUpTitle" type="String" />
+		<field name="popUpSubTitle" type="String" />
+		<field name="status" type="int" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+		<field name="childResourceId" type="long" />
+	</model>
+	<model name="com.ejada.telemony.db.model.Themes">
+		<field name="themeId" type="long" />
+		<field name="channelId" type="long" />
+		<field name="themeEnName" type="String" />
+		<field name="themeArName" type="String" />
+		<field name="darkTheme" type="boolean" />
+		<field name="primaryColors" type="String" />
+		<field name="secondaryColors" type="String" />
+		<field name="neutralColors" type="String" />
+		<field name="successColors" type="String" />
+		<field name="errorColors" type="String" />
+		<field name="warningColors" type="String" />
+		<field name="supportColors" type="String" />
+		<field name="gradientColors" type="String" />
+		<field name="splashBg" type="String" />
+		<field name="splashAnimation" type="String" />
+		<field name="headerBg" type="String" />
+		<field name="balanceBg" type="String" />
+		<field name="defaultTheme" type="boolean" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
+		<field name="uuid_" type="String" />
+		<field name="originalEntityId" type="long" />
+		<field name="entityResourceId" type="long" />
+		<field name="version" type="int" />
+		<field name="workflowAction" type="String" />
+		<field name="importRequestId" type="long" />
+	</model>
+	<model name="com.ejada.telemony.db.model.UserLogs">
+		<field name="logsId" type="long" />
+		<field name="userName" type="String" />
+		<field name="userActivity" type="String" />
+		<field name="logTime" type="Date" />
+		<field name="channelId" type="long" />
+	</model>
+</model-hints>

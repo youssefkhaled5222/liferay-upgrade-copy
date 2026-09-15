@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-error-code
+Bundle-SymbolicName: com.ejada.telemoney.error.code
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.error.code.constants

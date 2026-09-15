@@ -1,0 +1,4 @@
+Bundle-Name: CSPFilter
+Bundle-SymbolicName: com.ejada.telemoney.cspFilter
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.cspFilter.constants

@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-moi-biller
+Bundle-SymbolicName: com.ejada.telemoney.moi.biller
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.moi.biller.constants

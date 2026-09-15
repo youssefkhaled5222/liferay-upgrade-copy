@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-resources
+Bundle-SymbolicName: com.ejada.telemoney.resources
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.resources.constants

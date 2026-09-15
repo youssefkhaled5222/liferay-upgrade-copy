@@ -1,0 +1,8 @@
+dependencies {
+	compileOnly project(":modules:telemoney-db:telemoney-db-api")
+    compileOnly project(":modules:telemoney-db:telemoney-db-service")
+
+	compileOnly group: "com.liferay.portal", name: "release.dxp.api"
+
+	cssBuilder group: "com.liferay", name: "com.liferay.css.builder", version: "3.0.2"
+}

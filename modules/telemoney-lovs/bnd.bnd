@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-lovs
+Bundle-SymbolicName: com.ejada.telemoney.lovs
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.lovs.constants

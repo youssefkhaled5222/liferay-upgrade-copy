@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-localization
+Bundle-SymbolicName: com.ejada.telemoney.localization
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.localization.constants

@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-blocks
+Bundle-SymbolicName: com.ejada.telemoney.blocks
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.blocks.constants

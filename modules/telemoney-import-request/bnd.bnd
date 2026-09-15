@@ -1,0 +1,7 @@
+Bundle-Name: telemoney-import-request
+Bundle-SymbolicName: com.ejada.telemoney.importRequest
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.importRequest.constants
+Import-Package: com.ejada.telemony.db.model,\
+	com.ejada.telemony.db.service,\
+	*

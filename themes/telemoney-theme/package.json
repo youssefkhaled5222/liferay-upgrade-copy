@@ -1,0 +1,38 @@
+{
+	"name": "telemoney-theme",
+	"version": "1.0.0",
+	"main": "package.json",
+	"keywords": [
+		"liferay-theme"
+	],
+	"liferayTheme": {
+		"baseTheme": "styled",
+		"fontAwesome": false,
+		"screenshot": "",
+		"templateLanguage": "ftl",
+		"version": "7.4"
+	},
+	"devDependencies": {
+		"compass-mixins": "0.12.10",
+		"gulp": "4.0.2",
+		"liferay-frontend-common-css": "1.0.4",
+		"liferay-frontend-theme-styled": "6.0.2",
+		"liferay-frontend-theme-unstyled": "6.0.2",
+		"liferay-theme-tasks": "^10.5.3",
+		"liferay-frontend-css-common": "6.0.0"
+	},
+	"scripts": {
+		"init": "gulp init",
+		"build": "gulp build",
+		"deploy": "gulp deploy",
+		"extend": "gulp extend",
+		"kickstart": "gulp kickstart",
+		"status": "gulp status",
+		"upgrade": "gulp upgrade",
+		"watch": "gulp watch"
+	},
+	"dependencies": {
+		"jquery": "^3.5.1",
+		"@liferay/bs3-bs4-compat": "*"
+	}
+}

@@ -1,0 +1,4 @@
+Bundle-Name: featureTogglingApi
+Bundle-SymbolicName: com.ejada.telemoney.featureTogglingApi
+Bundle-Version: 1.0.0
+Liferay-Configuration-Path: /configuration

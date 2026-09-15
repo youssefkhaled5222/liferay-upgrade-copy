@@ -1,0 +1,13 @@
+Bundle-Name: telemoney-db-service
+Bundle-SymbolicName: com.ejada.telemony.db.service
+Bundle-Version: 1.0.4
+Liferay-Require-SchemaVersion: 1.0.4
+Liferay-Service: true
+-dsannotations-options: inherit
+Export-Package: \
+	com.ejada.telemony.db.model.impl,\
+	com.ejada.telemony.db.service.base,\
+	com.ejada.telemony.db.service.http,\
+	com.ejada.telemony.db.service.impl,\
+	com.ejada.telemony.db.service.persistence.impl,\
+	com.ejada.telemony.db.service.util

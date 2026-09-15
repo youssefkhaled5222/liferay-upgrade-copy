@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+
+<beans
+	default-destroy-method="destroy"
+	default-init-method="afterPropertiesSet"
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd"
+>
+	<bean class="com.ejada.telemony.db.service.impl.AppConfigItemLocalServiceImpl" id="com.ejada.telemony.db.service.AppConfigItemLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.AppConfigItemServiceImpl" id="com.ejada.telemony.db.service.AppConfigItemService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.AppConfigItemModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.AppConfigItemModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.AppConfigItemPersistenceImpl" id="com.ejada.telemony.db.service.persistence.AppConfigItemPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.AppEnvironmentLocalServiceImpl" id="com.ejada.telemony.db.service.AppEnvironmentLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.AppEnvironmentServiceImpl" id="com.ejada.telemony.db.service.AppEnvironmentService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.AppEnvironmentModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.AppEnvironmentModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.AppEnvironmentPersistenceImpl" id="com.ejada.telemony.db.service.persistence.AppEnvironmentPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.AppVersionLocalServiceImpl" id="com.ejada.telemony.db.service.AppVersionLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.AppVersionServiceImpl" id="com.ejada.telemony.db.service.AppVersionService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.AppVersionModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.AppVersionModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.AppVersionPersistenceImpl" id="com.ejada.telemony.db.service.persistence.AppVersionPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.BannerLocalServiceImpl" id="com.ejada.telemony.db.service.BannerLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.BannerServiceImpl" id="com.ejada.telemony.db.service.BannerService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.BannerModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.BannerModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.BannerPersistenceImpl" id="com.ejada.telemony.db.service.persistence.BannerPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.BannerContentLocalServiceImpl" id="com.ejada.telemony.db.service.BannerContentLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.BannerContentServiceImpl" id="com.ejada.telemony.db.service.BannerContentService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.BannerContentModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.BannerContentModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.BannerContentPersistenceImpl" id="com.ejada.telemony.db.service.persistence.BannerContentPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.persistence.impl.BannerContentLocalizationModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.BannerContentLocalizationModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.BannerContentLocalizationPersistenceImpl" id="com.ejada.telemony.db.service.persistence.BannerContentLocalizationPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.BillerLocalServiceImpl" id="com.ejada.telemony.db.service.BillerLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.BlocksLocalServiceImpl" id="com.ejada.telemony.db.service.BlocksLocalService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.BlocksModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.BlocksModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.BlocksPersistenceImpl" id="com.ejada.telemony.db.service.persistence.BlocksPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.ChannelsLocalServiceImpl" id="com.ejada.telemony.db.service.ChannelsLocalService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ChannelsModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.ChannelsModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ChannelsPersistenceImpl" id="com.ejada.telemony.db.service.persistence.ChannelsPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.ConfigurationLocalServiceImpl" id="com.ejada.telemony.db.service.ConfigurationLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.ConfigurationEntityLocalServiceImpl" id="com.ejada.telemony.db.service.ConfigurationEntityLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.ConfigurationEntityServiceImpl" id="com.ejada.telemony.db.service.ConfigurationEntityService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ConfigurationEntityModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.ConfigurationEntityModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ConfigurationEntityPersistenceImpl" id="com.ejada.telemony.db.service.persistence.ConfigurationEntityPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.CustomWebContentLocalServiceImpl" id="com.ejada.telemony.db.service.CustomWebContentLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.CustomWebContentServiceImpl" id="com.ejada.telemony.db.service.CustomWebContentService" />
+	<bean class="com.ejada.telemony.db.service.impl.ErrorCodeLocalServiceImpl" id="com.ejada.telemony.db.service.ErrorCodeLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.ESBLocalServiceImpl" id="com.ejada.telemony.db.service.ESBLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.FeatureLocalServiceImpl" id="com.ejada.telemony.db.service.FeatureLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.FeatureServiceImpl" id="com.ejada.telemony.db.service.FeatureService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.FeatureModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.FeatureModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.FeaturePersistenceImpl" id="com.ejada.telemony.db.service.persistence.FeaturePersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.FeatureLovMapLocalServiceImpl" id="com.ejada.telemony.db.service.FeatureLovMapLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.FeatureLovMapServiceImpl" id="com.ejada.telemony.db.service.FeatureLovMapService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.FeatureLovMapModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.FeatureLovMapModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.FeatureLovMapPersistenceImpl" id="com.ejada.telemony.db.service.persistence.FeatureLovMapPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.GlobalVersionLocalServiceImpl" id="com.ejada.telemony.db.service.GlobalVersionLocalService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.GlobalVersionModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.GlobalVersionModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.GlobalVersionPersistenceImpl" id="com.ejada.telemony.db.service.persistence.GlobalVersionPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.ImportRequestLocalServiceImpl" id="com.ejada.telemony.db.service.ImportRequestLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.ImportRequestServiceImpl" id="com.ejada.telemony.db.service.ImportRequestService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ImportRequestModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.ImportRequestModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ImportRequestPersistenceImpl" id="com.ejada.telemony.db.service.persistence.ImportRequestPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.IVRLocalServiceImpl" id="com.ejada.telemony.db.service.IVRLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.LanguagesLocalServiceImpl" id="com.ejada.telemony.db.service.LanguagesLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.LanguagesServiceImpl" id="com.ejada.telemony.db.service.LanguagesService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LanguagesModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.LanguagesModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LanguagesPersistenceImpl" id="com.ejada.telemony.db.service.persistence.LanguagesPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.LocalizationLocalServiceImpl" id="com.ejada.telemony.db.service.LocalizationLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.LocalizationServiceImpl" id="com.ejada.telemony.db.service.LocalizationService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LocalizationModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.LocalizationModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LocalizationPersistenceImpl" id="com.ejada.telemony.db.service.persistence.LocalizationPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.LovDataLocalServiceImpl" id="com.ejada.telemony.db.service.LovDataLocalService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LovDataModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.LovDataModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LovDataPersistenceImpl" id="com.ejada.telemony.db.service.persistence.LovDataPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LovDataLocalizationModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.LovDataLocalizationModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LovDataLocalizationPersistenceImpl" id="com.ejada.telemony.db.service.persistence.LovDataLocalizationPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.LovsLocalServiceImpl" id="com.ejada.telemony.db.service.LovsLocalService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LovsModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.LovsModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LovsPersistenceImpl" id="com.ejada.telemony.db.service.persistence.LovsPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LovsLocalizationModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.LovsLocalizationModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.LovsLocalizationPersistenceImpl" id="com.ejada.telemony.db.service.persistence.LovsLocalizationPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.MOILocalServiceImpl" id="com.ejada.telemony.db.service.MOILocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.NonCustomerLocalServiceImpl" id="com.ejada.telemony.db.service.NonCustomerLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.OTPLocalServiceImpl" id="com.ejada.telemony.db.service.OTPLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.PersonaLocalServiceImpl" id="com.ejada.telemony.db.service.PersonaLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.PersonaServiceImpl" id="com.ejada.telemony.db.service.PersonaService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.PersonaModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.PersonaModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.PersonaPersistenceImpl" id="com.ejada.telemony.db.service.persistence.PersonaPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.ResourceLocalServiceImpl" id="com.ejada.telemony.db.service.ResourceLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.ResourceServiceImpl" id="com.ejada.telemony.db.service.ResourceService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ResourceModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.ResourceModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ResourcePersistenceImpl" id="com.ejada.telemony.db.service.persistence.ResourcePersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ResourceLocalizationModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.ResourceLocalizationModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ResourceLocalizationPersistenceImpl" id="com.ejada.telemony.db.service.persistence.ResourceLocalizationPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.SegmentLocalServiceImpl" id="com.ejada.telemony.db.service.SegmentLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.SegmentServiceImpl" id="com.ejada.telemony.db.service.SegmentService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.SegmentModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.SegmentModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.SegmentPersistenceImpl" id="com.ejada.telemony.db.service.persistence.SegmentPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.SMSLocalServiceImpl" id="com.ejada.telemony.db.service.SMSLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.ThemesLocalServiceImpl" id="com.ejada.telemony.db.service.ThemesLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.ThemesServiceImpl" id="com.ejada.telemony.db.service.ThemesService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ThemesModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.ThemesModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.ThemesPersistenceImpl" id="com.ejada.telemony.db.service.persistence.ThemesPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.UserLogsLocalServiceImpl" id="com.ejada.telemony.db.service.UserLogsLocalService" />
+	<bean class="com.ejada.telemony.db.service.impl.UserLogsServiceImpl" id="com.ejada.telemony.db.service.UserLogsService" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.UserLogsModelArgumentsResolver" id="com.ejada.telemony.db.service.persistence.impl.UserLogsModelArgumentsResolver" />
+	<bean class="com.ejada.telemony.db.service.persistence.impl.UserLogsPersistenceImpl" id="com.ejada.telemony.db.service.persistence.UserLogsPersistence">
+		<property name="dataSource" ref="extDS" />
+	</bean>
+	<bean class="com.ejada.telemony.db.service.impl.WhiteListLocalServiceImpl" id="com.ejada.telemony.db.service.WhiteListLocalService" />
+</beans>

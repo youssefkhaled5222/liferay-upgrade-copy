@@ -1,0 +1,5 @@
+Bundle-Name: telemoney-personaApis
+Bundle-SymbolicName: com.ejada.telemoney.persona.api
+Bundle-Version: 1.0.0
+Liferay-Configuration-Path: /configuration
+Export-Package: com.ejada.telemoney.persona.api.application

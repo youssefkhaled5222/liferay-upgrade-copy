@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-otp-events
+Bundle-SymbolicName: com.ejada.telemoney.otp.events
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.otp.events.constants

@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-header
+Bundle-SymbolicName: com.ejada.telemoney.header
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.header.constants

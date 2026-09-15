@@ -1,0 +1,5 @@
+Bundle-Name: lovsApis
+Bundle-SymbolicName: com.ejada.telemoney.lovsApi
+Bundle-Version: 1.0.0
+Liferay-Configuration-Path: /configuration
+Export-Package: com.ejada.telemoney.lovsApi.application

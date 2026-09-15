@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-ivr-events
+Bundle-SymbolicName: com.ejada.telemoney.ivr.events
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.ivr.events.constants

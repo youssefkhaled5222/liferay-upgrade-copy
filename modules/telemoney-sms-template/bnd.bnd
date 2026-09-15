@@ -1,0 +1,4 @@
+Bundle-Name: telemoney-sms-template
+Bundle-SymbolicName: com.ejada.telemoney.sms.template
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.sms.template.constants

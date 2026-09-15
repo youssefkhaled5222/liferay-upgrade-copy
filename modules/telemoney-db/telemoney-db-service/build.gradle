@@ -1,0 +1,24 @@
+dependencies {
+	compileOnly project(":modules:telemoney-db:telemoney-db-api")
+	
+	compileOnly group: "com.liferay", name: "com.liferay.portal.spring.extender.api", version: "4.0.0"
+	compileOnly group: "com.liferay.portal", name: "release.dxp.api"
+	compileOnly group: 'org.json', name: 'json', version: '20180813'
+	compileOnly group: 'commons-io', name: 'commons-io', version: '2.5'
+	
+	//compileOnly project(":modules:telemoney-moi-biller")
+}
+
+buildService {
+	apiDir = "../telemoney-db-api/src/main/java"
+}
+
+group = "com.ejada.telemony.db"
+
+tasks.withType(JavaCompile) {
+
+	// Generated classes using Jodd library are unable to be read when compiled against JDK 11
+	
+	sourceCompatibility = JavaVersion.VERSION_1_8
+	targetCompatibility = JavaVersion.VERSION_1_8
+}

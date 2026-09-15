@@ -1,0 +1,5 @@
+Bundle-Name: telemoney-configuration-entity
+Bundle-SymbolicName: com.ejada.telemoney.configuration.entity
+Bundle-Version: 1.0.0
+Export-Package: com.ejada.telemoney.configuration.entity.constants
+
