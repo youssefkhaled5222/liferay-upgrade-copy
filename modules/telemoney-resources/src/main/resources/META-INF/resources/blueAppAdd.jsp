@@ -82,6 +82,25 @@
 				id="<portlet:namespace/>addUpdateResourceForm">
 				<fieldset <%= isOther ? "disabled" : "" %>>
 
+				<% if (!pages.isEmpty()) { %>
+				<div class="form-group row mb-4">
+					<label for="pageSelect" class="col-auto col-form-label">Page</label>
+					<div class="col-sm-3">
+						<select class="form-control" id="pageSelect"
+							name="<portlet:namespace/>selectedFeatureId">
+							<%
+								for (com.ejada.telemony.db.model.Feature featurePage : pages) {
+							%>
+							<option value="<%=featurePage.getEntityResourceId()%>"
+								<%=featurePage.getEntityResourceId() == selectedFeatureId ? "selected" : ""%>><%=featurePage.getFeatureName()%></option>
+							<%
+								}
+							%>
+						</select>
+					</div>
+				</div>
+				<% } %>
+
 				<div class="attachments-container">
 
 					<%

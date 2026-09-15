@@ -200,8 +200,8 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 	 * <p>
 	 * Blue App never uses the shared {@code /view.jsp} and {@code /add.jsp}:
 	 * it has its own {@code /blueAppView.jsp} and {@code /blueAppAdd.jsp}
-	 * pages. There is no page (feature) selection and resources are always
-	 * attachments.
+	 * pages. Resources are always attachments, but the page (feature) is
+	 * selected like in the other channels.
 	 * </p>
 	 */
 	private void doBlueAppView(RenderRequest renderRequest, RenderResponse renderResponse, Long chn)

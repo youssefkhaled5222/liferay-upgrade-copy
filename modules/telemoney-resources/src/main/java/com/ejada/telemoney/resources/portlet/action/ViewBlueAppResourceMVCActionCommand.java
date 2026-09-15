@@ -89,6 +89,8 @@ public class ViewBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 			actionRequest.setAttribute("resourceId", resourceId);
 			actionRequest.setAttribute(
 				"resourceCode", resource.getResourceCode());
+			actionRequest.setAttribute(
+				"selectedFeatureId", resource.getFeatureId());
 			actionRequest.setAttribute("nameValues", nameValues);
 			actionRequest.setAttribute("attachfilesName", attachfilesName);
 			actionRequest.setAttribute("attachValues", attachValues);

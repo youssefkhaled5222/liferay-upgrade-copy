@@ -51,9 +51,10 @@ import org.osgi.service.component.annotations.Reference;
  * Adds a new Blue App resource.
  *
  * <p>
- * Blue App resources are always attachments: there is no resource code, no
- * resource type and no page selection in the UI. The resource code defaults to
- * the generated resource id and the attachments are stored per language in
+ * Blue App resources are always attachments: there is no resource code and no
+ * resource type in the UI, but the page (feature) is selected like in the other
+ * channels. The resource code defaults to the generated resource id and the
+ * attachments are stored per language in
  * {@code channelName_langName_attachFile} folders.
  * </p>
  *
