@@ -33,6 +33,7 @@
 				<div class="modal-body">
 					<liferay-ui:error key="notAuthorized" message="You are not authorized to perform this action." />
 					<liferay-ui:error key="import-processing-error" message="Error processing import file. Please check the file format and try again." />
+					<liferay-ui:error key="no-importable-resources" message="None of the selected resources can be imported. Only attachment resources can be imported into the Blue App channel." />
 					<div class="form-group">
 						<label for="importResourceFile">Select a ZIP file to import:</label>
 						<input type="file" class="form-control-file" name="<portlet:namespace/>importFile"
@@ -177,6 +178,44 @@
 		}
 	}
 
+	// Blue App only holds attachment resources ("2"). Any other type can still
+	// be routed to it, but it is neglected by the server instead of imported.
+	function findImportChannel(channelId) {
+		for (var c = 0; c < importChannels.length; c++) {
+			if (String(importChannels[c].channelId) === String(channelId)) {
+				return importChannels[c];
+			}
+		}
+		return null;
+	}
+
+	function isNeglectedForChannel(index, channelId) {
+		if (!channelId) return false;
+		var channel = findImportChannel(channelId);
+		if (!channel || !channel.blueApp) return false;
+		return importParsedResources[index].resourceType !== '2';
+	}
+
+	function buildImportChannelOptions(index) {
+		var html = '<option value="">-- Select Channel --</option>';
+		for (var c = 0; c < importChannels.length; c++) {
+			var ch = importChannels[c];
+			var label = ch.name;
+			if (ch.blueApp && importParsedResources[index].resourceType !== '2') {
+				label += ' (not an attachment - will be neglected)';
+			}
+			html += '<option value="' + ch.channelId + '">' + escapeHtml(label) + '</option>';
+		}
+		return html;
+	}
+
+	function neglectedWarningHtml() {
+		return '<div class="alert alert-warning py-2 mb-0" role="alert">'
+			+ 'Blue App only supports attachment resources, so this resource will be '
+			+ 'neglected and will not be imported.'
+			+ '</div>';
+	}
+
 	function onImportActionChange(index) {
 		var actionSelect = document.getElementById('importAction_' + index);
 		var detailContainer = document.getElementById('importActionDetail_' + index);
@@ -189,11 +228,7 @@
 			var html = '<div class="form-group mb-2">';
 			html += '  <label><strong>Select Channel:</strong></label>';
 			html += '  <select class="form-control" id="importChannel_' + index + '" onchange="onImportChannelChangeForAdd(' + index + ')">';
-			html += '    <option value="">-- Select Channel --</option>';
-			for (var c = 0; c < importChannels.length; c++) {
-				var ch = importChannels[c];
-				html += '    <option value="' + ch.channelId + '">' + escapeHtml(ch.name) + '</option>';
-			}
+			html += buildImportChannelOptions(index);
 			html += '  </select>';
 			html += '</div>';
 			html += '<div id="importPageContainerAdd_' + index + '"></div>';
@@ -204,11 +239,7 @@
 			var html = '<div class="form-group mb-2">';
 			html += '  <label><strong>Select Channel:</strong></label>';
 			html += '  <select class="form-control" id="importUpdateChannel_' + index + '" onchange="onImportChannelChangeForUpdate(' + index + ')">';
-			html += '    <option value="">-- Select Channel --</option>';
-			for (var c = 0; c < importChannels.length; c++) {
-				var ch = importChannels[c];
-				html += '    <option value="' + ch.channelId + '">' + escapeHtml(ch.name) + '</option>';
-			}
+			html += buildImportChannelOptions(index);
 			html += '  </select>';
 			html += '</div>';
 			html += '<div id="importPageContainerUpdate_' + index + '"></div>';
@@ -225,6 +256,12 @@
 		pageContainer.innerHTML = '';
 
 		if (!channelId) return;
+
+		// A neglected resource is never imported, so there is no page to pick.
+		if (isNeglectedForChannel(index, channelId)) {
+			pageContainer.innerHTML = neglectedWarningHtml();
+			return;
+		}
 
 		var pagesForChannel = importApprovedPagesByChannel[channelId] || [];
 
@@ -256,6 +293,12 @@
 		resourceContainer.innerHTML = '';
 
 		if (!channelId) return;
+
+		// A neglected resource is never imported, so there is no page to pick.
+		if (isNeglectedForChannel(index, channelId)) {
+			pageContainer.innerHTML = neglectedWarningHtml();
+			return;
+		}
 
 		var pagesForChannel = importApprovedPagesByChannel[channelId] || [];
 
@@ -339,6 +382,12 @@
 				}
 				decision.channelId = parseInt(channelId);
 
+				// Neglected resources carry no page: the server drops them.
+				if (isNeglectedForChannel(i, channelId)) {
+					importUserDecisions.push(decision);
+					continue;
+				}
+
 				var pageSelect = document.getElementById('importPageAdd_' + i);
 				var pageId = pageSelect ? pageSelect.value : '';
 				if (!pageId) {
@@ -355,6 +404,12 @@
 					return;
 				}
 				decision.channelId = parseInt(updateChannelId);
+
+				// Neglected resources carry no page: the server drops them.
+				if (isNeglectedForChannel(i, updateChannelId)) {
+					importUserDecisions.push(decision);
+					continue;
+				}
 
 				var updatePageSelect = document.getElementById('importPageUpdate_' + i);
 				var updatePageId = updatePageSelect ? updatePageSelect.value : '';

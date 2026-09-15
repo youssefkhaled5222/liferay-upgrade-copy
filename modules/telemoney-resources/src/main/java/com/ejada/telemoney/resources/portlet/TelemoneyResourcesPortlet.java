@@ -783,6 +783,10 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 					resourceCode = comp.getData().getString("resourceCode");
 				}
 				resourceEntry.put("name", resourceCode);
+				// The review modal warns about resources that cannot live in the
+				// Blue App channel, so it needs to know the type up front.
+				resourceEntry.put("resourceType",
+						comp.getData() != null ? comp.getData().getString("resourceType", "") : "");
 				parsedResourcesArray.put(resourceEntry);
 			}
 
@@ -792,6 +796,7 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 				JSONObject chObj = JSONFactoryUtil.createJSONObject();
 				chObj.put("channelId", ch.getChannelId());
 				chObj.put("name", ch.getName());
+				chObj.put("blueApp", TelemoneyResourcesPortletKeys.BLUE_APP_CHANNEL_NAME.equals(ch.getName()));
 				channelsArray.put(chObj);
 			}
 
@@ -877,6 +882,7 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 		try {
 			JSONArray decisionsArray = JSONFactoryUtil.createJSONArray(importDecisionsJson);
 			List<ComponentEntryDto> components = resultDTO.getComponents();
+			Set<Integer> neglectedIndexes = new HashSet<>();
 			for (int i = 0; i < decisionsArray.length(); i++) {
 				JSONObject decision = decisionsArray.getJSONObject(i);
 				String name = decision.getString("name");
@@ -886,7 +892,8 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 				long featureId = decision.getLong("featureId", 0);
 
 				boolean found = false;
-				for (ComponentEntryDto entry : components) {
+				for (int j = 0; j < components.size(); j++) {
+					ComponentEntryDto entry = components.get(j);
 					JSONObject resourceData = entry.getData();
 					String resourceCode = resourceData.getString("resourceCode", "");
 
@@ -897,6 +904,18 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 						// Store featureId in the data for later use
 						resourceData.put("selectedFeatureId", featureId);
 						found = true;
+
+						// Blue App only holds attachment resources. The channel can
+						// still be picked for any other type, but such a resource is
+						// neglected instead of imported.
+						if (isBlueAppChannel(channelId) &&
+								!TelemoneyResourcesPortletKeys.BLUE_APP_RESOURCE_TYPE.equals(
+										resourceData.getString("resourceType", ""))) {
+
+							LOG.info("Neglecting resource '" + name
+									+ "': only attachment resources can be imported into the Blue App channel.");
+							neglectedIndexes.add(j);
+						}
 						break;
 					}
 				}
@@ -904,6 +923,24 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 					LOG.warn("Could not find resource with code '" + name + "' in components list, skipping.");
 				}
 			}
+
+			if (!neglectedIndexes.isEmpty()) {
+				List<ComponentEntryDto> importable = new ArrayList<>();
+				for (int j = 0; j < components.size(); j++) {
+					if (!neglectedIndexes.contains(j)) {
+						importable.add(components.get(j));
+					}
+				}
+				components = importable;
+				resultDTO.setComponents(importable);
+			}
+
+			if (components.isEmpty()) {
+				LOG.warn("No importable resources left after filtering, nothing to import.");
+				SessionErrors.add(actionRequest, "no-importable-resources");
+				return;
+			}
+
 			Path path = _importRequestLocalService.buildZip(resultDTO);
 			_importRequestLocalService.startImportRequestWorkflow(resultDTO, path.toString(), user, serviceContext);
 
