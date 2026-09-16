@@ -669,6 +669,7 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
             resource.setCompanyId(importRequest.getCompanyId());
             resource.setUserId(importRequest.getUserId());
             resource.setUserName(importRequest.getUserName());
+            resource.setImportRequestId(importRequest.getId());
         }
 
         if (resource.getCreateDate() == null) {
