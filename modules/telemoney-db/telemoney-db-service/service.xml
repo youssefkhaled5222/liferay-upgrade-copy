@@ -672,6 +672,7 @@
 		<column name="version" type="int" />
 		<column name="workflowAction" type="String" />
 		<column name="featureId" db-name="featureId" type="long" />
+		<column name="importRequestId"  db-name="importRequestId"  type="long" />
 
 		<localized-entity>
 			<localized-column name="name" />
