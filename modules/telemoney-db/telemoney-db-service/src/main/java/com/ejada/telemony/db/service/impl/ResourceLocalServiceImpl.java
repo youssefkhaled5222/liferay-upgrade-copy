@@ -42,7 +42,6 @@ import com.liferay.counter.kernel.service.CounterLocalServiceUtil;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
 import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
-import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.OrderFactoryUtil;
@@ -67,7 +66,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
-import org.osgi.service.component.annotations.Reference;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -113,9 +111,6 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
      * API. Matched strictly, case included.
      */
     private static final String BLUE_APP_CHANNEL_NAME = "Blue App";
-
-    @Reference
-    private DLAppService dlAppLocalService;
 
     public void addNewResource(String resourceCode, String resourceType, String urlType, Map<String, String> nameValues,
                                Map<String, String> attachValues, Map<String, String> attachfilesName,
@@ -954,12 +949,15 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
                 try {
                     Folder folder;
                     try {
-                        folder = dlAppLocalService.getFolder(groupId,
+                        folder = DLAppLocalServiceUtil.getFolder(groupId,
                                 DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, folderName);
                     } catch (Exception e) {
-                        folder = dlAppLocalService.addFolder("", groupId,
+                        folder = DLAppLocalServiceUtil.addFolder("", user.getUserId(), groupId,
                                 DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
                                 folderName, "", serviceContext);
+
+                        LOG.info("Created the Documents and Media folder " + folderName
+                                + " (id " + folder.getFolderId() + ") for the import");
                     }
 
                     File tempFile = createTempFile("import_attach_", "_" + sourceFileName);
@@ -967,15 +965,20 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
 
                     FileEntry fileEntry;
                     try {
-                        fileEntry = dlAppLocalService.getFileEntry(groupId, folder.getFolderId(), sourceFileName);
-                        dlAppLocalService.updateFileEntry(fileEntry.getFileEntryId(), sourceFileName,
+                        fileEntry = DLAppLocalServiceUtil.getFileEntry(groupId, folder.getFolderId(), sourceFileName);
+                        fileEntry = DLAppLocalServiceUtil.updateFileEntry(user.getUserId(),
+                                fileEntry.getFileEntryId(), sourceFileName,
                                 "", sourceFileName, "", "", "",
                                 DLVersionNumberIncrease.MINOR,
                                 tempFile, null, null, serviceContext);
                     } catch (Exception e) {
-                        fileEntry = dlAppLocalService.addFileEntry(groupId, folder.getFolderId(),
+                        fileEntry = DLAppLocalServiceUtil.addFileEntry(user.getUserId(), groupId,
+                                folder.getFolderId(),
                                 sourceFileName, "", sourceFileName, "", "", tempFile, serviceContext);
                     }
+
+                    LOG.info("Uploaded the imported attachment " + sourceFileName
+                            + " to the folder " + folderName);
 
                     String attachURL = "/documents/" + groupId
                             + "/" + folder.getFolderId() + "/"
