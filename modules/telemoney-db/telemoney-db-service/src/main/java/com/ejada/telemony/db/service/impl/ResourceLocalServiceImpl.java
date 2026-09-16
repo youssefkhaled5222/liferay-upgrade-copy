@@ -929,9 +929,26 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
             serviceContext.setAddGroupPermissions(true);
             serviceContext.setAddGuestPermissions(true);
 
+            // Only the languages of the target channel are localized by
+            // createResourceEntity, so only their files belong in Documents and
+            // Media. The exporting channel may have more languages than the
+            // target one, and those must not be uploaded.
+            Set<String> channelLanguages = new HashSet<>();
+
+            for (Languages language : languagesLocalService.getLatestApprovedByChannelId(channelId)) {
+                channelLanguages.add(language.getLangName());
+            }
+
             for (Map.Entry<String, ResourceImportDTO.LocalizationData> entry : data.getLocalizations().entrySet()) {
                 String languageId = entry.getKey();
                 ResourceImportDTO.LocalizationData loc = entry.getValue();
+
+                if (!channelLanguages.contains(languageId)) {
+                    LOG.info("Skipping the imported attachment of language " + languageId
+                            + ": it is not a language of the target channel " + channelId);
+
+                    continue;
+                }
 
                 if (loc.getAttachName() == null || loc.getAttachName().isEmpty()) {
                     continue;
