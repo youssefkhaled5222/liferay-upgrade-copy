@@ -21,6 +21,44 @@
 				|| lower.endsWith(".png") || lower.endsWith(".svg")
 				|| lower.endsWith(".gif");
 	}
+
+	private static final String DOCUMENT_ICON =
+			"<span class=\"blueapp-card-icon\">"
+			+ "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"40\""
+			+ " fill=\"currentColor\" viewBox=\"0 0 16 16\">"
+			+ "<path d=\"M4 0h5.293A1 1 0 0 1 10 .293L13.707 4a1 1 0 0 1 .293.707V14a2 2"
+			+ " 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm5.5 1.5v2a1 1 0 0 0 1 1h2l-3-3z\" />"
+			+ "</svg></span>";
+
+	/**
+	 * Renders the top of a card: the image itself for pictures and, for the
+	 * other types Liferay generates a thumbnail for, that thumbnail. The
+	 * document icon is the fallback, and it also replaces a thumbnail that the
+	 * portal has not generated.
+	 */
+	private String buildPreviewMarkup(String attachUrl, String attachName, boolean hasAttachment) {
+		if (!hasAttachment) {
+			return DOCUMENT_ICON;
+		}
+
+		if (isImageAttachment(attachName)) {
+			return "<img src=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachUrl)
+					+ "\" alt=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachName)
+					+ "\" />";
+		}
+
+		if (!attachName.toLowerCase().endsWith(".pdf")) {
+			return DOCUMENT_ICON;
+		}
+
+		String separator = attachUrl.contains("?") ? "&" : "?";
+
+		return "<img src=\""
+				+ com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachUrl + separator + "imageThumbnail=1")
+				+ "\" alt=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachName)
+				+ "\" onerror=\"blueAppPreviewFailed(this)\" />"
+				+ DOCUMENT_ICON.replace("blueapp-card-icon", "blueapp-card-icon d-none");
+	}
 %>
 
 <portlet:renderURL var="pageChangeURL" />
@@ -146,16 +184,13 @@
 							}
 
 							hasDisplayedResource = true;
-							String englishName = currentResource
-									.getName(TelemoneyConstants.LANGUAGE_ENGLISH_NAME) != null
-											? currentResource.getName(TelemoneyConstants.LANGUAGE_ENGLISH_NAME)
-											: "Non";
 							String attachUrl = currentResource
 									.getAttach(TelemoneyConstants.LANGUAGE_ENGLISH_NAME);
 							String attachName = currentResource
 									.getAttachName(TelemoneyConstants.LANGUAGE_ENGLISH_NAME);
-							boolean hasAttachment = (attachUrl != null) && !attachUrl.isEmpty();
-							boolean isImage = isImageAttachment(attachName);
+							boolean hasAttachment = (attachUrl != null) && !attachUrl.isEmpty()
+									&& (attachName != null) && !attachName.isEmpty();
+							String displayName = hasAttachment ? attachName : "No file";
 							boolean isPending = false;
 							if (resourcesWithPending != null && resourcesWithPending.containsKey(currentResource)) {
 								Boolean pending = resourcesWithPending.get(currentResource);
@@ -163,36 +198,32 @@
 							}
 				%>
 				<div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-					<div class="card blueapp-card h-100">
+					<div class="card blueapp-card h-100<%=hasAttachment ? " blueapp-card-clickable" : ""%>"
+						<%=hasAttachment ? "data-href=\"" + HtmlUtil.escapeAttribute(attachUrl) + "\"" : ""%>
+						onclick="blueAppOpenCard(event, this)">
 						<div class="blueapp-card-preview">
-							<span class="blueapp-card-check export-checkbox-column d-none">
+							<span class="blueapp-card-check export-checkbox-column d-none"
+								onclick="event.stopPropagation()">
 								<input type="checkbox" class="export-resource-checkbox"
 									value="<%=currentResource.getResourceId()%>" />
 							</span>
 
-							<% if (hasAttachment && isImage) { %>
-							<img src="<%=attachUrl%>" alt="<%=HtmlUtil.escapeAttribute(englishName)%>" />
-							<% } else { %>
-							<span class="blueapp-card-icon">
-								<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"
-									fill="currentColor" viewBox="0 0 16 16">
-									<path d="M4 0h5.293A1 1 0 0 1 10 .293L13.707 4a1 1 0 0 1 .293.707V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm5.5 1.5v2a1 1 0 0 0 1 1h2l-3-3z" />
-								</svg>
-							</span>
-							<% } %>
+							<%=buildPreviewMarkup(attachUrl, attachName, hasAttachment)%>
 						</div>
 
 						<div class="card-body blueapp-card-body">
 							<div class="d-flex align-items-start justify-content-between">
 								<% if (hasAttachment) { %>
 								<a class="blueapp-card-name" href="<%=attachUrl%>" target="_blank"
-									rel="noopener" title="<%=HtmlUtil.escapeAttribute(englishName)%>"><%=HtmlUtil.escape(englishName)%></a>
+									rel="noopener" onclick="event.stopPropagation()"
+									title="<%=HtmlUtil.escapeAttribute(displayName)%>"><%=HtmlUtil.escape(displayName)%></a>
 								<% } else { %>
 								<span class="blueapp-card-name text-muted"
-									title="<%=HtmlUtil.escapeAttribute(englishName)%>"><%=HtmlUtil.escape(englishName)%></span>
+									title="<%=HtmlUtil.escapeAttribute(displayName)%>"><%=HtmlUtil.escape(displayName)%></span>
 								<% } %>
 
-								<div class="dropdown blueapp-card-actions">
+								<div class="dropdown blueapp-card-actions"
+									onclick="event.stopPropagation()">
 									<button class="btn btn-link p-0 text-secondary" type="button"
 										data-toggle="dropdown" aria-haspopup="true"
 										aria-expanded="false">
@@ -226,7 +257,7 @@
 								</div>
 							</div>
 
-							<div class="mt-2">
+							<div class="blueapp-card-status">
 								<% if (isPending) { %>
 								<span class="label label-warning">Pending</span>
 								<% } else { %>
@@ -318,6 +349,37 @@
 		var selectedFeatureId = selectElement.value;
 		var baseUrl = '<%=pageChangeURL%>';
 		window.location.href = baseUrl + '&<portlet:namespace/>selectedFeatureId=' + selectedFeatureId;
+	}
+
+	// A card opens its file, except while picking resources for an export,
+	// where clicking it selects instead.
+	function blueAppOpenCard(event, card) {
+		if (exportMode) {
+			var checkbox = card.querySelector('.export-resource-checkbox');
+
+			if (checkbox) {
+				checkbox.checked = !checkbox.checked;
+			}
+
+			return;
+		}
+
+		var href = card.getAttribute('data-href');
+
+		if (href) {
+			window.open(href, '_blank', 'noopener');
+		}
+	}
+
+	// A thumbnail the portal has not generated falls back to the icon.
+	function blueAppPreviewFailed(image) {
+		image.classList.add('d-none');
+
+		var icon = image.parentNode.querySelector('.blueapp-card-icon');
+
+		if (icon) {
+			icon.classList.remove('d-none');
+		}
 	}
 
 	function clearForm() {
@@ -430,29 +492,25 @@
 </script>
 
 <style>
-.blueapp-card {
-	transition: box-shadow 0.15s ease-in-out;
-}
-
-.blueapp-card:hover {
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+.blueapp-card-clickable {
+	cursor: pointer;
 }
 
 .blueapp-card-preview {
 	align-items: center;
-	background-color: #f7f8f9;
+	background-color: #fff;
 	border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 	display: flex;
-	height: 180px;
+	height: 160px;
 	justify-content: center;
 	overflow: hidden;
 	position: relative;
 }
 
 .blueapp-card-preview img {
-	max-height: 100%;
-	max-width: 100%;
-	object-fit: contain;
+	height: 100%;
+	object-fit: cover;
+	width: 100%;
 }
 
 .blueapp-card-icon {
@@ -460,20 +518,25 @@
 }
 
 .blueapp-card-check {
-	left: 0.75rem;
+	left: 0.5rem;
 	position: absolute;
-	top: 0.75rem;
+	top: 0.5rem;
 }
 
 .blueapp-card-body {
-	padding: 0.75rem 1rem 1rem;
+	padding: 0.5rem 0.75rem;
 }
 
 .blueapp-card-name {
 	display: block;
+	line-height: 1.3;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.blueapp-card-status {
+	margin-top: 0.25rem;
 }
 
 .blueapp-card-actions {

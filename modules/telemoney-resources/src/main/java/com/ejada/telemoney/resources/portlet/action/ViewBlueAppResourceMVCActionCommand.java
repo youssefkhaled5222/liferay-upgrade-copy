@@ -91,6 +91,10 @@ public class ViewBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 				"resourceCode", resource.getResourceCode());
 			actionRequest.setAttribute(
 				"selectedFeatureId", resource.getFeatureId());
+
+			// The add and edit cards show the state of the resource being
+			// loaded, the same way the list does.
+			actionRequest.setAttribute("resourceStatus", resource.getStatus());
 			actionRequest.setAttribute("nameValues", nameValues);
 			actionRequest.setAttribute("attachfilesName", attachfilesName);
 			actionRequest.setAttribute("attachValues", attachValues);

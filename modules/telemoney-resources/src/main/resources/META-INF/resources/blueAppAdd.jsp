@@ -9,6 +9,7 @@
 <%@page import="java.util.Map"%>
 <%@page import="java.util.HashMap"%>
 <%@page import="com.liferay.portal.kernel.util.HtmlUtil"%>
+<%@page import="com.liferay.portal.kernel.workflow.WorkflowConstants"%>
 
 <%!
 	private boolean isImageAttachment(String attachName) {
@@ -21,6 +22,44 @@
 		return lower.endsWith(".jpg") || lower.endsWith(".jpeg")
 				|| lower.endsWith(".png") || lower.endsWith(".svg")
 				|| lower.endsWith(".gif");
+	}
+
+	private static final String DOCUMENT_ICON =
+			"<span class=\"blueapp-card-icon\">"
+			+ "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"40\""
+			+ " fill=\"currentColor\" viewBox=\"0 0 16 16\">"
+			+ "<path d=\"M4 0h5.293A1 1 0 0 1 10 .293L13.707 4a1 1 0 0 1 .293.707V14a2 2"
+			+ " 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm5.5 1.5v2a1 1 0 0 0 1 1h2l-3-3z\" />"
+			+ "</svg></span>";
+
+	/**
+	 * Renders the top of a card: the image itself for pictures and, for the
+	 * other types Liferay generates a thumbnail for, that thumbnail. The
+	 * document icon is the fallback, and it also replaces a thumbnail that the
+	 * portal has not generated.
+	 */
+	private String buildPreviewMarkup(String attachUrl, String attachName, boolean hasAttachment) {
+		if (!hasAttachment) {
+			return DOCUMENT_ICON;
+		}
+
+		if (isImageAttachment(attachName)) {
+			return "<img src=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachUrl)
+					+ "\" alt=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachName)
+					+ "\" />";
+		}
+
+		if (!attachName.toLowerCase().endsWith(".pdf")) {
+			return DOCUMENT_ICON;
+		}
+
+		String separator = attachUrl.contains("?") ? "&" : "?";
+
+		return "<img src=\""
+				+ com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachUrl + separator + "imageThumbnail=1")
+				+ "\" alt=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachName)
+				+ "\" onerror=\"blueAppPreviewFailed(this)\" />"
+				+ DOCUMENT_ICON.replace("blueapp-card-icon", "blueapp-card-icon d-none");
 	}
 %>
 
@@ -54,6 +93,10 @@
 			: new HashMap<>();
 
 	boolean isAdd = action.equals("add");
+
+	Integer resourceStatus = (Integer) request.getAttribute("resourceStatus");
+	boolean isPending = (resourceStatus == null)
+			|| (resourceStatus.intValue() != WorkflowConstants.STATUS_APPROVED);
 
 	List<com.ejada.telemony.db.model.Feature> pages =
 			(List<com.ejada.telemony.db.model.Feature>) request.getAttribute("pages") != null
@@ -119,7 +162,18 @@
 					%>
 					<label class="form-label">Attachments</label>
 
-					<div class="row blueapp-grid">
+					<ul class="nav nav-tabs">
+						<%
+							for (int i = 0; i < languagesNames.size(); i++) {
+						%>
+						<li><a data-toggle="tab" href="#AttachTab<%=i%>"
+							class="nav-link <%=i == 0 ? "active" : ""%>"><%=languagesNames.get(i)%></a></li>
+						<%
+							}
+						%>
+					</ul>
+
+					<div class="tab-content">
 						<%
 							for (int i = 0; i < languagesNames.size(); i++) {
 								String language = languagesNames.get(i);
@@ -129,74 +183,75 @@
 
 								boolean hasAttachment = (storedUrl != null) && !storedUrl.isEmpty()
 										&& (storedName != null) && !storedName.isEmpty();
-								boolean isImage = isImageAttachment(storedName);
 						%>
-						<div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-							<div class="card blueapp-card h-100">
-								<div class="blueapp-card-preview">
-									<% if (hasAttachment && isImage) { %>
-									<img src="<%=storedUrl%>"
-										alt="<%=HtmlUtil.escapeAttribute(storedName)%>" />
-									<% } else { %>
-									<span class="blueapp-card-icon">
-										<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"
-											fill="currentColor" viewBox="0 0 16 16">
-											<path d="M4 0h5.293A1 1 0 0 1 10 .293L13.707 4a1 1 0 0 1 .293.707V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm5.5 1.5v2a1 1 0 0 0 1 1h2l-3-3z" />
-										</svg>
-									</span>
-									<% } %>
-								</div>
-
-								<div class="card-body blueapp-card-body">
-									<div class="d-flex align-items-start justify-content-between">
-										<% if (hasAttachment) { %>
-										<a class="blueapp-card-name" id="blueAppName<%=language%>"
-											href="<%=storedUrl%>" target="_blank" rel="noopener"
-											title="<%=HtmlUtil.escapeAttribute(storedName)%>"><%=HtmlUtil.escape(storedName)%></a>
-										<% } else { %>
-										<span class="blueapp-card-name text-muted"
-											id="blueAppName<%=language%>">No file chosen</span>
-										<% } %>
-
-										<% if (!isOther && !action.equals("view")) { %>
-										<div class="dropdown blueapp-card-actions">
-											<button class="btn btn-link p-0 text-secondary" type="button"
-												data-toggle="dropdown" aria-haspopup="true"
-												aria-expanded="false">
-												<svg xmlns="http://www.w3.org/2000/svg" width="16"
-													height="16" fill="currentColor"
-													class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
-													<path
-														d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
-												</svg>
-											</button>
-											<div class="dropdown-menu dropdown-menu-right">
-												<a class="dropdown-item"
-													onclick="browseBlueAppFile('<%=language%>')">Browse</a>
-											</div>
+						<div id="AttachTab<%=i%>"
+							class="tab-pane fade in <%=i == 0 ? "active" : ""%> px-0 pt-3">
+							<div class="row blueapp-grid">
+								<div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+									<div class="card blueapp-card h-100">
+										<div class="blueapp-card-preview"
+											id="blueAppPreview<%=language%>">
+											<%=buildPreviewMarkup(storedUrl, storedName, hasAttachment)%>
 										</div>
-										<% } %>
+
+										<div class="card-body blueapp-card-body">
+											<div class="d-flex align-items-start justify-content-between">
+												<% if (hasAttachment) { %>
+												<a class="blueapp-card-name" id="blueAppName<%=language%>"
+													href="<%=storedUrl%>" target="_blank" rel="noopener"
+													title="<%=HtmlUtil.escapeAttribute(storedName)%>"><%=HtmlUtil.escape(storedName)%></a>
+												<% } else { %>
+												<span class="blueapp-card-name text-muted"
+													id="blueAppName<%=language%>">No file chosen</span>
+												<% } %>
+
+												<% if (!isOther && !action.equals("view")) { %>
+												<div class="dropdown blueapp-card-actions">
+													<button class="btn btn-link p-0 text-secondary"
+														type="button" data-toggle="dropdown"
+														aria-haspopup="true" aria-expanded="false">
+														<svg xmlns="http://www.w3.org/2000/svg" width="16"
+															height="16" fill="currentColor"
+															class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+															<path
+																d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+														</svg>
+													</button>
+													<div class="dropdown-menu dropdown-menu-right">
+														<a class="dropdown-item"
+															onclick="browseBlueAppFile('<%=language%>')">Browse</a>
+													</div>
+												</div>
+												<% } %>
+											</div>
+
+											<% if (!isAdd) { %>
+											<div class="blueapp-card-status">
+												<% if (isPending) { %>
+												<span class="label label-warning">Pending</span>
+												<% } else { %>
+												<span class="label label-success">Approved</span>
+												<% } %>
+											</div>
+											<% } %>
+										</div>
 									</div>
 
-									<div class="mt-2">
-										<small class="text-muted"><%=language%></small>
-									</div>
+									<input type="file" class="d-none blueapp-file-input"
+										accept=".pdf,.doc,.docx,.jpg,.jpeg,.svg"
+										data-language="<%=language%>"
+										name="<portlet:namespace/><%=language%>attachFile"
+										id="<portlet:namespace/><%=language%>attachFile" />
 								</div>
 							</div>
 
-							<input type="file" class="d-none blueapp-file-input"
-								accept=".pdf,.doc,.docx,.jpg,.jpeg,.svg"
-								data-language="<%=language%>"
-								name="<portlet:namespace/><%=language%>attachFile"
-								id="<portlet:namespace/><%=language%>attachFile" />
+							<small class="form-text text-muted">Allowed file types:
+								pdf, doc, docx, jpg, jpeg, svg.</small>
 						</div>
 						<%
 							}
 						%>
 					</div>
-
-					<small class="form-text text-muted">Allowed file types:
-						pdf, doc, docx, jpg, jpeg, svg.</small>
 					<%
 						}
 					%>
@@ -253,15 +308,44 @@
 		var language = $(this).data('language');
 		var label = document.getElementById('blueAppName' + language);
 
-		if (!label) {
+		if (!label || !e.target.files || !e.target.files[0]) {
 			return;
 		}
 
-		if (e.target.files && e.target.files[0]) {
-			$(label).text(e.target.files[0].name);
-			$(label).removeClass('text-muted');
-			label.setAttribute('title', e.target.files[0].name);
+		var file = e.target.files[0];
+
+		$(label).text(file.name);
+		$(label).removeClass('text-muted');
+		label.setAttribute('title', file.name);
+
+		// Show the picked image right away; other types keep the icon until
+		// the portal has stored and processed the file.
+		var preview = document.getElementById('blueAppPreview' + language);
+
+		if (preview && window.FileReader && /^image\//.test(file.type)) {
+			var reader = new FileReader();
+
+			reader.onload = function(loaded) {
+				preview.innerHTML = '<img alt="" src="' + loaded.target.result + '" />';
+			};
+
+			reader.readAsDataURL(file);
 		}
+	})
+
+	// A thumbnail the portal has not generated falls back to the icon.
+	function blueAppPreviewFailed(image) {
+		image.classList.add('d-none');
+
+		var icon = image.parentNode.querySelector('.blueapp-card-icon');
+
+		if (icon) {
+			icon.classList.remove('d-none');
+		}
+	}
+
+	$('.nav-tabs a').click(function() {
+		$(this).tab('show');
 	})
 
 	function openAddUpdateModal() {
@@ -335,29 +419,26 @@
 	});
 </script>
 <style>
-.blueapp-card {
-	transition: box-shadow 0.15s ease-in-out;
-}
-
-.blueapp-card:hover {
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+.nav-tabs a.active {
+	border-bottom-color: #80acff !important;
+	border-width: 3px;
 }
 
 .blueapp-card-preview {
 	align-items: center;
-	background-color: #f7f8f9;
+	background-color: #fff;
 	border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 	display: flex;
-	height: 180px;
+	height: 160px;
 	justify-content: center;
 	overflow: hidden;
 	position: relative;
 }
 
 .blueapp-card-preview img {
-	max-height: 100%;
-	max-width: 100%;
-	object-fit: contain;
+	height: 100%;
+	object-fit: cover;
+	width: 100%;
 }
 
 .blueapp-card-icon {
@@ -365,14 +446,19 @@
 }
 
 .blueapp-card-body {
-	padding: 0.75rem 1rem 1rem;
+	padding: 0.5rem 0.75rem;
 }
 
 .blueapp-card-name {
 	display: block;
+	line-height: 1.3;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.blueapp-card-status {
+	margin-top: 0.25rem;
 }
 
 .blueapp-card-actions {
