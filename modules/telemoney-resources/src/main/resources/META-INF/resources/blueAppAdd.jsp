@@ -188,7 +188,10 @@
 							class="tab-pane fade in <%=i == 0 ? "active" : ""%> px-0 pt-3">
 							<div class="row blueapp-grid">
 								<div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-									<div class="card blueapp-card h-100">
+									<div class="card blueapp-card h-100<%=hasAttachment ? " blueapp-card-clickable" : ""%>"
+										id="blueAppCard<%=language%>"
+										<%=hasAttachment ? "data-href=\"" + HtmlUtil.escapeAttribute(storedUrl) + "\"" : ""%>
+										onclick="blueAppOpenCard(event, this)">
 										<div class="blueapp-card-preview"
 											id="blueAppPreview<%=language%>">
 											<%=buildPreviewMarkup(storedUrl, storedName, hasAttachment)%>
@@ -196,14 +199,12 @@
 
 										<div class="card-body blueapp-card-body">
 											<div class="d-flex align-items-start justify-content-between">
-												<% if (hasAttachment) { %>
-												<a class="blueapp-card-name" id="blueAppName<%=language%>"
-													href="<%=storedUrl%>" target="_blank" rel="noopener"
-													title="<%=HtmlUtil.escapeAttribute(storedName)%>"><%=HtmlUtil.escape(storedName)%></a>
-												<% } else { %>
-												<span class="blueapp-card-name text-muted"
-													id="blueAppName<%=language%>">No file chosen</span>
-												<% } %>
+												<%-- The card opens the file, so the name is plain text: an
+													 anchor would keep pointing at the stored file after a
+													 new one is picked. --%>
+												<span class="blueapp-card-name<%=hasAttachment ? "" : " text-muted"%>"
+													id="blueAppName<%=language%>"
+													title="<%=hasAttachment ? HtmlUtil.escapeAttribute(storedName) : ""%>"><%=hasAttachment ? HtmlUtil.escape(storedName) : "No file chosen"%></span>
 
 												<% if (!isOther && !action.equals("view")) { %>
 												<div class="dropdown blueapp-card-actions">
@@ -304,9 +305,55 @@
 		}
 	}
 
+	var blueAppDocumentIcon = '<%=DOCUMENT_ICON%>';
+
+	// The menu handles its own click and must not stop the event, because
+	// Bootstrap listens for the dropdown toggle on the document.
+	function blueAppHandlesOwnClick(node, card) {
+		while (node && (node !== card)) {
+			if (node.classList
+					&& node.classList.contains('blueapp-card-actions')) {
+				return true;
+			}
+
+			node = node.parentNode;
+		}
+
+		return false;
+	}
+
+	function blueAppOpenCard(event, card) {
+		if (blueAppHandlesOwnClick(event.target, card)) {
+			return;
+		}
+
+		var href = card.getAttribute('data-href');
+
+		if (href) {
+			window.open(href, '_blank', 'noopener');
+		}
+	}
+
+	function blueAppRenderPreview(preview, url, fileName) {
+		var lower = fileName.toLowerCase();
+
+		if (/\.(jpg|jpeg|png|svg|gif)$/.test(lower)) {
+			preview.innerHTML = '<img alt="" src="' + url + '" />';
+		}
+		else if (/\.pdf$/.test(lower)) {
+			preview.innerHTML = '<object class="blueapp-card-pdf"'
+				+ ' type="application/pdf" data="' + url
+				+ '#toolbar=0&navpanes=0&scrollbar=0&view=FitH"></object>';
+		}
+		else {
+			preview.innerHTML = blueAppDocumentIcon;
+		}
+	}
+
 	$('.blueapp-file-input').on('change', function(e) {
 		var language = $(this).data('language');
 		var label = document.getElementById('blueAppName' + language);
+		var card = document.getElementById('blueAppCard' + language);
 
 		if (!label || !e.target.files || !e.target.files[0]) {
 			return;
@@ -318,18 +365,27 @@
 		$(label).removeClass('text-muted');
 		label.setAttribute('title', file.name);
 
-		// Show the picked image right away; other types keep the icon until
-		// the portal has stored and processed the file.
+		// The card must show and open the file just picked, not the stored one
+		// it still points at until the form is saved.
+		var url = window.URL && window.URL.createObjectURL
+			? window.URL.createObjectURL(file) : null;
+
+		if (url && card) {
+			var previousUrl = card.getAttribute('data-object-url');
+
+			if (previousUrl && window.URL.revokeObjectURL) {
+				window.URL.revokeObjectURL(previousUrl);
+			}
+
+			card.setAttribute('data-href', url);
+			card.setAttribute('data-object-url', url);
+			card.classList.add('blueapp-card-clickable');
+		}
+
 		var preview = document.getElementById('blueAppPreview' + language);
 
-		if (preview && window.FileReader && /^image\//.test(file.type)) {
-			var reader = new FileReader();
-
-			reader.onload = function(loaded) {
-				preview.innerHTML = '<img alt="" src="' + loaded.target.result + '" />';
-			};
-
-			reader.readAsDataURL(file);
+		if (preview && url) {
+			blueAppRenderPreview(preview, url, file.name);
 		}
 	})
 
@@ -416,6 +472,10 @@
 .blueapp-card {
 	/* The menu must not be clipped by the card. */
 	overflow: visible;
+}
+
+.blueapp-card-clickable {
+	cursor: pointer;
 }
 
 .blueapp-card-preview {

@@ -251,6 +251,13 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 						StringUtil.replace(fileEntry.getTitle(), ' ', '+') + "/";
 
 				attachValues.put(languageName, attachURL);
+
+				// The new file is stored, so the one it replaces can go. This
+				// runs after the upload so a failed upload never loses the
+				// file that is still in use.
+				deleteReplacedAttachment(
+					groupId, resourceId, languageName, sourceFileName,
+					folder.getFolderId());
 			}
 
 			ServiceContext workflowServiceContext =
@@ -291,6 +298,87 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 				exception);
 
 			return "";
+		}
+	}
+
+	/**
+	 * Removes the attachment a language used to hold once its replacement has
+	 * been stored, so a language keeps exactly one file in Documents and Media.
+	 *
+	 * <p>
+	 * The stored attachment is still the previous one here, because the
+	 * resource is only updated after every language has been handled.
+	 * </p>
+	 */
+	private void deleteReplacedAttachment(
+		long groupId, long resourceId, String languageName,
+		String newAttachName, long newFolderId) {
+
+		try {
+			ResourceLocalization previous =
+				_resourcesLocalService.getResourceLocalization(
+					resourceId, languageName);
+
+			if (previous == null) {
+				return;
+			}
+
+			String previousAttach = previous.getAttach();
+			String previousAttachName = previous.getAttachName();
+
+			if ((previousAttach == null) || previousAttach.isEmpty() ||
+				(previousAttachName == null) || previousAttachName.isEmpty()) {
+
+				return;
+			}
+
+			long previousFolderId = getFolderId(previousAttach);
+
+			if (previousFolderId < 0) {
+				return;
+			}
+
+			// The upload replaced the file in place, so there is nothing left
+			// over to remove.
+			if ((previousFolderId == newFolderId) &&
+				previousAttachName.equals(newAttachName)) {
+
+				return;
+			}
+
+			FileEntry previousFileEntry = _dlAppService.getFileEntry(
+				groupId, previousFolderId, previousAttachName);
+
+			_dlAppService.deleteFileEntry(previousFileEntry.getFileEntryId());
+
+			LOG.info(
+				"Deleted the replaced Blue App attachment " +
+					previousAttachName + " of language " + languageName);
+		}
+		catch (Exception exception) {
+			LOG.warn(
+				"Unable to delete the replaced Blue App attachment of language " +
+					languageName,
+				exception);
+		}
+	}
+
+	/**
+	 * Reads the folder from a stored attachment path, which is shaped
+	 * {@code /documents/{groupId}/{folderId}/{title}/}.
+	 */
+	private long getFolderId(String attach) {
+		String[] parts = attach.split("/");
+
+		if (parts.length < 4) {
+			return -1;
+		}
+
+		try {
+			return Long.parseLong(parts[3]);
+		}
+		catch (NumberFormatException numberFormatException) {
+			return -1;
 		}
 	}
 
