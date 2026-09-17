@@ -8,10 +8,6 @@
 <%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
 
-<portlet:renderURL var="add_resource">
-	<portlet:param name="myView" value="add" />
-</portlet:renderURL>
-
 <portlet:renderURL var="pageChangeURL" />
 
 <portlet:actionURL name="deleteBlueAppResource" var="deleteBlueAppResource" />
@@ -38,6 +34,14 @@
 	Boolean hasPendingImport = (Boolean) request.getAttribute("hasPendingImport");
 	if (hasPendingImport == null) hasPendingImport = false;
 %>
+
+<%-- Declared after the scriptlet so the page being viewed can be carried over
+	 to the add screen and preselected there. --%>
+<portlet:renderURL var="add_resource">
+	<portlet:param name="myView" value="add" />
+	<portlet:param name="selectedFeatureId"
+		value="<%=String.valueOf(selectedFeatureId)%>" />
+</portlet:renderURL>
 
 <div>
 	<div class="my-4 d-flex justify-content-between align-items-center">
