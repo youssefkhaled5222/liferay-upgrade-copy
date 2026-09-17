@@ -41,9 +41,12 @@
 		}
 
 		if (isImageAttachment(attachName)) {
+			// Not self closing: Liferay rewrites an <img> pointing at a
+			// document into a <picture>, and the trailing slash of a self
+			// closing tag survives the rewrite as stray text on the card.
 			return "<img src=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachUrl)
 					+ "\" alt=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachName)
-					+ "\" />";
+					+ "\">";
 		}
 
 		if (!attachName.toLowerCase().endsWith(".pdf")) {
@@ -217,14 +220,9 @@
 
 						<div class="card-body blueapp-card-body">
 							<div class="d-flex align-items-start justify-content-between">
-								<% if (hasAttachment) { %>
-								<a class="blueapp-card-name" href="<%=attachUrl%>" target="_blank"
-									rel="noopener"
-									title="<%=HtmlUtil.escapeAttribute(displayName)%>"><%=HtmlUtil.escape(displayName)%></a>
-								<% } else { %>
-								<span class="blueapp-card-name text-muted"
+								<%-- The card opens the file, so the name is plain text. --%>
+								<span class="blueapp-card-name<%=hasAttachment ? "" : " text-muted"%>"
 									title="<%=HtmlUtil.escapeAttribute(displayName)%>"><%=HtmlUtil.escape(displayName)%></span>
-								<% } %>
 
 								<div class="dropdown blueapp-card-actions">
 									<button class="btn btn-link p-0 text-secondary" type="button"
@@ -354,15 +352,14 @@
 		window.location.href = baseUrl + '&<portlet:namespace/>selectedFeatureId=' + selectedFeatureId;
 	}
 
-	// The menu, the checkbox and the file name handle their own clicks. They
-	// must not stop the event from bubbling, because Bootstrap listens for the
-	// dropdown toggle on the document, so the card checks the origin instead.
+	// The menu and the checkbox handle their own clicks. They must not stop the
+	// event from bubbling, because Bootstrap listens for the dropdown toggle on
+	// the document, so the card checks the origin instead.
 	function blueAppHandlesOwnClick(node, card) {
 		while (node && (node !== card)) {
 			if (node.classList
 					&& (node.classList.contains('blueapp-card-actions')
-						|| node.classList.contains('blueapp-card-check')
-						|| node.classList.contains('blueapp-card-name'))) {
+						|| node.classList.contains('blueapp-card-check'))) {
 				return true;
 			}
 
@@ -527,6 +524,14 @@
 	justify-content: center;
 	overflow: hidden;
 	position: relative;
+}
+
+/* Liferay rewrites a document <img> into a <picture>, which must keep
+   filling the preview the same way. */
+.blueapp-card-preview picture {
+	display: block;
+	height: 100%;
+	width: 100%;
 }
 
 .blueapp-card-preview img {
