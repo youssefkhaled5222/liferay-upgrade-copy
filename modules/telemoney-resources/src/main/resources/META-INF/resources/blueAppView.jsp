@@ -31,10 +31,9 @@
 			+ "</svg></span>";
 
 	/**
-	 * Renders the top of a card: the image itself for pictures and, for the
-	 * other types Liferay generates a thumbnail for, that thumbnail. The
-	 * document icon is the fallback, and it also replaces a thumbnail that the
-	 * portal has not generated.
+	 * Renders the top of a card: the picture itself for images, the embedded
+	 * first page for PDFs, and the document icon for everything else and
+	 * whenever the browser cannot render the file.
 	 */
 	private String buildPreviewMarkup(String attachUrl, String attachName, boolean hasAttachment) {
 		if (!hasAttachment) {
@@ -51,13 +50,14 @@
 			return DOCUMENT_ICON;
 		}
 
-		String separator = attachUrl.contains("?") ? "&" : "?";
-
-		return "<img src=\""
-				+ com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachUrl + separator + "imageThumbnail=1")
-				+ "\" alt=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachName)
-				+ "\" onerror=\"blueAppPreviewFailed(this)\" />"
-				+ DOCUMENT_ICON.replace("blueapp-card-icon", "blueapp-card-icon d-none");
+		// The portal only serves a thumbnail once it has generated one, which
+		// needs preview generation to be enabled. Embedding the file instead
+		// lets the browser's own PDF viewer draw the first page, and the icon
+		// stays as the fallback for a browser that cannot render it.
+		return "<object class=\"blueapp-card-pdf\" type=\"application/pdf\" data=\""
+				+ com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(
+					attachUrl + "#toolbar=0&navpanes=0&scrollbar=0&view=FitH")
+				+ "\">" + DOCUMENT_ICON + "</object>";
 	}
 %>
 
@@ -86,6 +86,9 @@
 
 	Boolean hasPendingImport = (Boolean) request.getAttribute("hasPendingImport");
 	if (hasPendingImport == null) hasPendingImport = false;
+
+	// A search that matched nothing must show nothing, not the whole list.
+	boolean searchPerformed = Boolean.TRUE.equals(request.getAttribute("searchPerformed"));
 %>
 
 <%-- Declared after the scriptlet so the page being viewed can be carried over
@@ -155,10 +158,12 @@
 
 			<div class="row">
 				<form action="${searchBlueAppResource}" method="post">
+					<input type="hidden" name="<portlet:namespace/>selectedFeatureId"
+						value="<%=String.valueOf(selectedFeatureId)%>" />
 					<div class="col-md-12">
 						<div class="d-flex align-items-end mb-3">
 							<div>
-								<label class="form-label">Search By Name</label>
+								<label class="form-label">Search By File Name</label>
 								<input type="text" name="<portlet:namespace/>searchTerm"
 									class="form-control" id="searchInput" required>
 							</div>
@@ -177,7 +182,7 @@
 			<div class="row blueapp-grid">
 				<%
 					if (searchResult != null) {
-						List<Resource> listToDisplay = !searchResult.isEmpty() ? searchResult : viewResource;
+						List<Resource> listToDisplay = searchPerformed ? searchResult : viewResource;
 						for (Resource currentResource : listToDisplay) {
 							if (selectedFeatureId > 0 && currentResource.getFeatureId() != selectedFeatureId) {
 								continue;
@@ -202,8 +207,7 @@
 						<%=hasAttachment ? "data-href=\"" + HtmlUtil.escapeAttribute(attachUrl) + "\"" : ""%>
 						onclick="blueAppOpenCard(event, this)">
 						<div class="blueapp-card-preview">
-							<span class="blueapp-card-check export-checkbox-column d-none"
-								onclick="event.stopPropagation()">
+							<span class="blueapp-card-check export-checkbox-column d-none">
 								<input type="checkbox" class="export-resource-checkbox"
 									value="<%=currentResource.getResourceId()%>" />
 							</span>
@@ -215,15 +219,14 @@
 							<div class="d-flex align-items-start justify-content-between">
 								<% if (hasAttachment) { %>
 								<a class="blueapp-card-name" href="<%=attachUrl%>" target="_blank"
-									rel="noopener" onclick="event.stopPropagation()"
+									rel="noopener"
 									title="<%=HtmlUtil.escapeAttribute(displayName)%>"><%=HtmlUtil.escape(displayName)%></a>
 								<% } else { %>
 								<span class="blueapp-card-name text-muted"
 									title="<%=HtmlUtil.escapeAttribute(displayName)%>"><%=HtmlUtil.escape(displayName)%></span>
 								<% } %>
 
-								<div class="dropdown blueapp-card-actions"
-									onclick="event.stopPropagation()">
+								<div class="dropdown blueapp-card-actions">
 									<button class="btn btn-link p-0 text-secondary" type="button"
 										data-toggle="dropdown" aria-haspopup="true"
 										aria-expanded="false">
@@ -351,9 +354,31 @@
 		window.location.href = baseUrl + '&<portlet:namespace/>selectedFeatureId=' + selectedFeatureId;
 	}
 
+	// The menu, the checkbox and the file name handle their own clicks. They
+	// must not stop the event from bubbling, because Bootstrap listens for the
+	// dropdown toggle on the document, so the card checks the origin instead.
+	function blueAppHandlesOwnClick(node, card) {
+		while (node && (node !== card)) {
+			if (node.classList
+					&& (node.classList.contains('blueapp-card-actions')
+						|| node.classList.contains('blueapp-card-check')
+						|| node.classList.contains('blueapp-card-name'))) {
+				return true;
+			}
+
+			node = node.parentNode;
+		}
+
+		return false;
+	}
+
 	// A card opens its file, except while picking resources for an export,
 	// where clicking it selects instead.
 	function blueAppOpenCard(event, card) {
+		if (blueAppHandlesOwnClick(event.target, card)) {
+			return;
+		}
+
 		if (exportMode) {
 			var checkbox = card.querySelector('.export-resource-checkbox');
 
@@ -371,20 +396,12 @@
 		}
 	}
 
-	// A thumbnail the portal has not generated falls back to the icon.
-	function blueAppPreviewFailed(image) {
-		image.classList.add('d-none');
-
-		var icon = image.parentNode.querySelector('.blueapp-card-icon');
-
-		if (icon) {
-			icon.classList.remove('d-none');
-		}
-	}
-
 	function clearForm() {
 		document.getElementById('searchInput').value = '';
-		window.location.href = window.location.pathname;
+
+		// Clearing drops the search, not the page being viewed.
+		window.location.href = '<%=pageChangeURL%>'
+			+ '&<portlet:namespace/>selectedFeatureId=<%=String.valueOf(selectedFeatureId)%>';
 	}
 
 	function deleteResource(recordId) {
@@ -496,6 +513,11 @@
 	cursor: pointer;
 }
 
+.blueapp-card {
+	/* The menu must not be clipped by the card. */
+	overflow: visible;
+}
+
 .blueapp-card-preview {
 	align-items: center;
 	background-color: #fff;
@@ -510,6 +532,13 @@
 .blueapp-card-preview img {
 	height: 100%;
 	object-fit: cover;
+	width: 100%;
+}
+
+.blueapp-card-pdf {
+	border: 0;
+	height: 100%;
+	pointer-events: none;
 	width: 100%;
 }
 

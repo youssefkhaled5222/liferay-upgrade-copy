@@ -33,10 +33,9 @@
 			+ "</svg></span>";
 
 	/**
-	 * Renders the top of a card: the image itself for pictures and, for the
-	 * other types Liferay generates a thumbnail for, that thumbnail. The
-	 * document icon is the fallback, and it also replaces a thumbnail that the
-	 * portal has not generated.
+	 * Renders the top of a card: the picture itself for images, the embedded
+	 * first page for PDFs, and the document icon for everything else and
+	 * whenever the browser cannot render the file.
 	 */
 	private String buildPreviewMarkup(String attachUrl, String attachName, boolean hasAttachment) {
 		if (!hasAttachment) {
@@ -53,13 +52,14 @@
 			return DOCUMENT_ICON;
 		}
 
-		String separator = attachUrl.contains("?") ? "&" : "?";
-
-		return "<img src=\""
-				+ com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachUrl + separator + "imageThumbnail=1")
-				+ "\" alt=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachName)
-				+ "\" onerror=\"blueAppPreviewFailed(this)\" />"
-				+ DOCUMENT_ICON.replace("blueapp-card-icon", "blueapp-card-icon d-none");
+		// The portal only serves a thumbnail once it has generated one, which
+		// needs preview generation to be enabled. Embedding the file instead
+		// lets the browser's own PDF viewer draw the first page, and the icon
+		// stays as the fallback for a browser that cannot render it.
+		return "<object class=\"blueapp-card-pdf\" type=\"application/pdf\" data=\""
+				+ com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(
+					attachUrl + "#toolbar=0&navpanes=0&scrollbar=0&view=FitH")
+				+ "\">" + DOCUMENT_ICON + "</object>";
 	}
 %>
 
@@ -333,17 +333,6 @@
 		}
 	})
 
-	// A thumbnail the portal has not generated falls back to the icon.
-	function blueAppPreviewFailed(image) {
-		image.classList.add('d-none');
-
-		var icon = image.parentNode.querySelector('.blueapp-card-icon');
-
-		if (icon) {
-			icon.classList.remove('d-none');
-		}
-	}
-
 	$('.nav-tabs a').click(function() {
 		$(this).tab('show');
 	})
@@ -424,6 +413,11 @@
 	border-width: 3px;
 }
 
+.blueapp-card {
+	/* The menu must not be clipped by the card. */
+	overflow: visible;
+}
+
 .blueapp-card-preview {
 	align-items: center;
 	background-color: #fff;
@@ -438,6 +432,13 @@
 .blueapp-card-preview img {
 	height: 100%;
 	object-fit: cover;
+	width: 100%;
+}
+
+.blueapp-card-pdf {
+	border: 0;
+	height: 100%;
+	pointer-events: none;
 	width: 100%;
 }
 
