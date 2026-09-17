@@ -145,18 +145,6 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 			}
 
 			for (String languageName : languagesName) {
-				String attachName = ParamUtil.getString(
-					actionRequest, languageName + "attachName", "");
-
-				if (containsXSS(attachName)) {
-					SessionErrors.add(actionRequest, "xssDetected");
-
-					return;
-				}
-
-				// Each language keeps its own name: no English fallback.
-				nameValues.put(languageName, attachName);
-
 				File attachedFile = uploadRequest.getFile(
 					languageName + "attachFile");
 
@@ -165,6 +153,12 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 
 				if (sourceFileName == null) {
 					sourceFileName = "";
+				}
+
+				if (containsXSS(sourceFileName)) {
+					SessionErrors.add(actionRequest, "xssDetected");
+
+					return;
 				}
 
 				// A language may be left completely empty: only upload when a
@@ -180,6 +174,10 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 						resourceId, languageName);
 
 					attachfilesName.put(languageName, sourceFileName);
+
+					// The name is not entered by the user: it always follows
+					// the file the language ends up with.
+					nameValues.put(languageName, sourceFileName);
 
 					continue;
 				}
@@ -199,6 +197,10 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 				}
 
 				attachfilesName.put(languageName, sourceFileName);
+
+				// The name is not entered by the user: it always follows the
+				// file the language ends up with.
+				nameValues.put(languageName, sourceFileName);
 
 				ServiceContext serviceContext = ServiceContextFactory.getInstance(
 					DLFolder.class.getName(), actionRequest);

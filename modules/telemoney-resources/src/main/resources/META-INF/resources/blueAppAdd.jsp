@@ -123,16 +123,6 @@
 						<div id="AttachTab<%=i%>"
 							class="tab-pane fade in <%=i == 0 ? "active" : ""%> px-0">
 							<div class="mb-3">
-								<label class="form-label">Name</label> <input pattern="^[^<>&quot;&#39;]+$"
- title="Special characters like < > ' &quot; are not allowed." type="text"
-									name="<portlet:namespace/><%=languagesNames.get(i)%>attachName"
-									id="<portlet:namespace/><%=languagesNames.get(i)%>attachName"
-									value="<%=(nameValues.get(languagesNames.get(i)) != null)
-							? nameValues.get(languagesNames.get(i))
-							: ""%>"
-									class="form-control">
-							</div>
-							<div class="mb-3">
 								<label class="form-label">Attachments</label>
 								<div class="input-group">
 									<div class="w-100">

@@ -144,18 +144,6 @@ public class AddBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 			}
 
 			for (String languageName : languagesName) {
-				String attachName = ParamUtil.getString(
-					actionRequest, languageName + "attachName", "");
-
-				if (containsXSS(attachName)) {
-					SessionErrors.add(actionRequest, "xssDetected");
-
-					return;
-				}
-
-				// Each language keeps its own name: no English fallback.
-				nameValues.put(languageName, attachName);
-
 				File attachedFile = uploadRequest.getFile(
 					languageName + "attachFile");
 
@@ -165,6 +153,17 @@ public class AddBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 				if (sourceFileName == null) {
 					sourceFileName = "";
 				}
+
+				if (containsXSS(sourceFileName)) {
+					SessionErrors.add(actionRequest, "xssDetected");
+
+					return;
+				}
+
+				// The name is not entered by the user: like the resource code,
+				// which defaults to the generated resource id, it is filled in
+				// from the uploaded file name. Each language keeps its own.
+				nameValues.put(languageName, sourceFileName);
 
 				attachfilesName.put(languageName, sourceFileName);
 
