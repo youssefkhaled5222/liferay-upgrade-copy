@@ -7,10 +7,21 @@
 <%@page import="java.util.ArrayList"%>
 <%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
+<%@page import="com.liferay.portal.kernel.util.HtmlUtil"%>
 
-<portlet:renderURL var="add_resource">
-	<portlet:param name="myView" value="add" />
-</portlet:renderURL>
+<%!
+	private boolean isImageAttachment(String attachName) {
+		if ((attachName == null) || attachName.isEmpty()) {
+			return false;
+		}
+
+		String lower = attachName.toLowerCase();
+
+		return lower.endsWith(".jpg") || lower.endsWith(".jpeg")
+				|| lower.endsWith(".png") || lower.endsWith(".svg")
+				|| lower.endsWith(".gif");
+	}
+%>
 
 <portlet:renderURL var="pageChangeURL" />
 
@@ -38,6 +49,14 @@
 	Boolean hasPendingImport = (Boolean) request.getAttribute("hasPendingImport");
 	if (hasPendingImport == null) hasPendingImport = false;
 %>
+
+<%-- Declared after the scriptlet so the page being viewed can be carried over
+	 to the add screen and preselected there. --%>
+<portlet:renderURL var="add_resource">
+	<portlet:param name="myView" value="add" />
+	<portlet:param name="selectedFeatureId"
+		value="<%=String.valueOf(selectedFeatureId)%>" />
+</portlet:renderURL>
 
 <div>
 	<div class="my-4 d-flex justify-content-between align-items-center">
@@ -114,61 +133,77 @@
 					</div>
 				</form>
 			</div>
-			<div>
-				<table class="table">
+			<%
+				boolean hasDisplayedResource = false;
+			%>
+			<div class="row blueapp-grid">
+				<%
+					if (searchResult != null) {
+						List<Resource> listToDisplay = !searchResult.isEmpty() ? searchResult : viewResource;
+						for (Resource currentResource : listToDisplay) {
+							if (selectedFeatureId > 0 && currentResource.getFeatureId() != selectedFeatureId) {
+								continue;
+							}
 
-					<thead>
-						<tr>
-							<th scope="col" class="export-checkbox-column d-none"></th>
-							<th scope="col">Name in English</th>
-							<th scope="col">Status</th>
-							<th scope="col"></th>
-						</tr>
-					</thead>
-					<tbody>
-						<%
-							if (searchResult != null) {
-								List<Resource> listToDisplay = !searchResult.isEmpty() ? searchResult : viewResource;
-								for (Resource currentResource : listToDisplay) {
-									if (selectedFeatureId > 0 && currentResource.getFeatureId() != selectedFeatureId) {
-										continue;
-									}
-									String englishName = (String) currentResource
-											.getName(TelemoneyConstants.LANGUAGE_ENGLISH_NAME) != null
-													? currentResource.getName(TelemoneyConstants.LANGUAGE_ENGLISH_NAME)
-													: "Non";
-									boolean isPending = false;
-									if (resourcesWithPending != null && resourcesWithPending.containsKey(currentResource)) {
-										Boolean pending = resourcesWithPending.get(currentResource);
-										isPending = pending != null && pending;
-									}
-						%>
-						<tr>
-							<td class="export-checkbox-column d-none">
+							hasDisplayedResource = true;
+							String englishName = currentResource
+									.getName(TelemoneyConstants.LANGUAGE_ENGLISH_NAME) != null
+											? currentResource.getName(TelemoneyConstants.LANGUAGE_ENGLISH_NAME)
+											: "Non";
+							String attachUrl = currentResource
+									.getAttach(TelemoneyConstants.LANGUAGE_ENGLISH_NAME);
+							String attachName = currentResource
+									.getAttachName(TelemoneyConstants.LANGUAGE_ENGLISH_NAME);
+							boolean hasAttachment = (attachUrl != null) && !attachUrl.isEmpty();
+							boolean isImage = isImageAttachment(attachName);
+							boolean isPending = false;
+							if (resourcesWithPending != null && resourcesWithPending.containsKey(currentResource)) {
+								Boolean pending = resourcesWithPending.get(currentResource);
+								isPending = pending != null && pending;
+							}
+				%>
+				<div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+					<div class="card blueapp-card h-100">
+						<div class="blueapp-card-preview">
+							<span class="blueapp-card-check export-checkbox-column d-none">
 								<input type="checkbox" class="export-resource-checkbox"
 									value="<%=currentResource.getResourceId()%>" />
-							</td>
-							<td><%=englishName%></td>
-							<td>
-								<% if (isPending) { %>
-									<span class="label label-warning">Pending</span>
+							</span>
+
+							<% if (hasAttachment && isImage) { %>
+							<img src="<%=attachUrl%>" alt="<%=HtmlUtil.escapeAttribute(englishName)%>" />
+							<% } else { %>
+							<span class="blueapp-card-icon">
+								<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"
+									fill="currentColor" viewBox="0 0 16 16">
+									<path d="M4 0h5.293A1 1 0 0 1 10 .293L13.707 4a1 1 0 0 1 .293.707V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm5.5 1.5v2a1 1 0 0 0 1 1h2l-3-3z" />
+								</svg>
+							</span>
+							<% } %>
+						</div>
+
+						<div class="card-body blueapp-card-body">
+							<div class="d-flex align-items-start justify-content-between">
+								<% if (hasAttachment) { %>
+								<a class="blueapp-card-name" href="<%=attachUrl%>" target="_blank"
+									rel="noopener" title="<%=HtmlUtil.escapeAttribute(englishName)%>"><%=HtmlUtil.escape(englishName)%></a>
 								<% } else { %>
-									<span class="label label-success">Approved</span>
+								<span class="blueapp-card-name text-muted"
+									title="<%=HtmlUtil.escapeAttribute(englishName)%>"><%=HtmlUtil.escape(englishName)%></span>
 								<% } %>
-							</td>
-							<td>
-								<div class="dropdown">
-									<button class="btn btn-secondary dropdown-toggle" type="button"
-										id="dropdownMenuButton" data-toggle="dropdown"
-										aria-haspopup="true" aria-expanded="false">
+
+								<div class="dropdown blueapp-card-actions">
+									<button class="btn btn-link p-0 text-secondary" type="button"
+										data-toggle="dropdown" aria-haspopup="true"
+										aria-expanded="false">
 										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
 											fill="currentColor" class="bi bi-three-dots-vertical"
 											viewBox="0 0 16 16">
-								  <path
+											<path
 												d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
-								</svg>
+										</svg>
 									</button>
-									<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+									<div class="dropdown-menu dropdown-menu-right">
 										<% if (isPending) { %>
 										<a class="dropdown-item"
 											href="<portlet:actionURL name="viewBlueAppResource">
@@ -189,17 +224,30 @@
 										<% } %>
 									</div>
 								</div>
-							</td>
-						</tr>
-						<%
-							}
-							}
-						%>
+							</div>
 
+							<div class="mt-2">
+								<% if (isPending) { %>
+								<span class="label label-warning">Pending</span>
+								<% } else { %>
+								<span class="label label-success">Approved</span>
+								<% } %>
+							</div>
+						</div>
+					</div>
+				</div>
+				<%
+						}
+					}
 
-					</tbody>
-
-				</table>
+					if (!hasDisplayedResource) {
+				%>
+				<div class="col-12">
+					<p class="text-secondary text-center my-5">No resources to display.</p>
+				</div>
+				<%
+					}
+				%>
 			</div>
 		</div>
 	</div>
@@ -380,6 +428,63 @@
 		cancelExportMode();
 	}
 </script>
+
+<style>
+.blueapp-card {
+	transition: box-shadow 0.15s ease-in-out;
+}
+
+.blueapp-card:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.blueapp-card-preview {
+	align-items: center;
+	background-color: #f7f8f9;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+	display: flex;
+	height: 180px;
+	justify-content: center;
+	overflow: hidden;
+	position: relative;
+}
+
+.blueapp-card-preview img {
+	max-height: 100%;
+	max-width: 100%;
+	object-fit: contain;
+}
+
+.blueapp-card-icon {
+	color: #9aa3ab;
+}
+
+.blueapp-card-check {
+	left: 0.75rem;
+	position: absolute;
+	top: 0.75rem;
+}
+
+.blueapp-card-body {
+	padding: 0.75rem 1rem 1rem;
+}
+
+.blueapp-card-name {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.blueapp-card-actions {
+	flex-shrink: 0;
+	margin-left: 0.5rem;
+}
+
+.blueapp-card-actions .btn:focus {
+	box-shadow: none;
+}
+</style>
 
 <!-- Hidden form for export -->
 <form action="<%=exportResourceURL%>" method="post" id="exportResourceForm" class="d-none">
