@@ -31,9 +31,9 @@
 			+ "</svg></span>";
 
 	/**
-	 * Renders the top of a card: the picture itself for images, the embedded
-	 * first page for PDFs, and the document icon for everything else and
-	 * whenever the browser cannot render the file.
+	 * Renders the top of a card: the image as a background for pictures, the
+	 * embedded first page for PDFs, and the document icon for everything else
+	 * and whenever the browser cannot render the file.
 	 */
 	private String buildPreviewMarkup(String attachUrl, String attachName, boolean hasAttachment) {
 		if (!hasAttachment) {
@@ -41,12 +41,19 @@
 		}
 
 		if (isImageAttachment(attachName)) {
-			// Not self closing: Liferay rewrites an <img> pointing at a
-			// document into a <picture>, and the trailing slash of a self
-			// closing tag survives the rewrite as stray text on the card.
-			return "<img src=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachUrl)
-					+ "\" alt=\"" + com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachName)
-					+ "\">";
+
+			// Drawn as a background rather than an <img>, because Liferay
+			// rewrites an <img> that points at a document into a <picture>
+			// carrying its adaptive media sources, and that rewrite was
+			// leaving a stray character behind on the card. A background is
+			// never rewritten, and covers the preview the same way.
+			String cssUrl = attachUrl.replace("'", "%27");
+
+			return "<span class=\"blueapp-card-image\" role=\"img\" aria-label=\""
+					+ com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(attachName)
+					+ "\" style=\"background-image: url('"
+					+ com.liferay.portal.kernel.util.HtmlUtil.escapeAttribute(cssUrl)
+					+ "')\"></span>";
 		}
 
 		if (!attachName.toLowerCase().endsWith(".pdf")) {
@@ -517,6 +524,8 @@
 
 .blueapp-card-preview {
 	align-items: center;
+	/* Holds no text, so nothing the portal may inject can show through. */
+	font-size: 0;
 	background-color: #fff;
 	border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 	display: flex;
@@ -526,9 +535,10 @@
 	position: relative;
 }
 
-/* Liferay rewrites a document <img> into a <picture>, which must keep
-   filling the preview the same way. */
-.blueapp-card-preview picture {
+.blueapp-card-image {
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: cover;
 	display: block;
 	height: 100%;
 	width: 100%;
