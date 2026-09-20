@@ -136,7 +136,7 @@
 	</div>
 
 	<liferay-ui:error key="xssDetected" message="Invalid input: special characters are not allowed." />
-	<liferay-ui:error key="file-upload-error" message="File upload error" />
+	<liferay-ui:error key="file-upload-error" message="File upload error. Allowed file types: pdf, doc, docx, jpg, jpeg, svg (max 10 MB)." />
 	<liferay-ui:error key="notAuthorized" message="You are not authorized to perform this action." />
 	<liferay-ui:error key="noDataToExport" message="No data available to export. Please ensure there are entries to export and try again." />
 	<liferay-ui:error key="zipSizeExceeded" message="Export failed: The generated ZIP file exceeds the 10MB size limit. Please reduce the number of selected items and try again." />

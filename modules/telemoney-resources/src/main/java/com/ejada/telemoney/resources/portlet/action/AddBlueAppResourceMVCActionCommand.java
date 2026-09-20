@@ -186,7 +186,20 @@ public class AddBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 						"Invalid Blue App attachment for language " +
 							languageName,
 						exception);
-					SessionErrors.add(actionRequest, "file-upload-error");
+
+					// Keep the user on the same screen, with the reason and the
+					// language the rejected file belongs to.
+					actionRequest.setAttribute(
+						"errorMsg",
+						"[" + languageName + "] " + exception.getMessage());
+					actionRequest.setAttribute("myView", "add");
+					actionRequest.setAttribute("action", "add");
+					actionRequest.setAttribute(
+						"selectedFeatureId", selectedFeatureId);
+					actionRequest.setAttribute(
+						"attachfilesName", attachfilesName);
+					actionRequest.setAttribute("attachValues", attachValues);
+					SessionErrors.add(actionRequest, "error");
 
 					return;
 				}
