@@ -144,6 +144,34 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 				languagesName.add(langName.getLangName());
 			}
 
+			// A file name is unique inside the folder of its language: the
+			// whole submission is refused before anything is uploaded when one
+			// of the files is already there and is not the one this resource
+			// already uses for that language.
+			Map<String, String> ownAttachNames = new HashMap<>();
+
+			for (String languageName : languagesName) {
+				ownAttachNames.put(
+					languageName,
+					getPreviousAttachName(resourceId, languageName));
+			}
+
+			String duplicateMsg = findDuplicateAttachment(
+				themeDisplay.getScopeGroupId(), channelName, languagesName,
+				uploadRequest, ownAttachNames);
+
+			if (duplicateMsg != null) {
+				actionRequest.setAttribute("errorMsg", duplicateMsg);
+				actionRequest.setAttribute("myView", "add");
+				actionRequest.setAttribute("action", "update");
+				actionRequest.setAttribute("resourceId", resourceId);
+				actionRequest.setAttribute(
+					"selectedFeatureId", selectedFeatureId);
+				SessionErrors.add(actionRequest, "error");
+
+				return;
+			}
+
 			for (String languageName : languagesName) {
 				File attachedFile = uploadRequest.getFile(
 					languageName + "attachFile");
@@ -313,6 +341,70 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 
 			return "";
 		}
+	}
+
+	/**
+	 * Looks for an attachment that is already stored in the folder a language
+	 * uploads to.
+	 *
+	 * <p>
+	 * The check runs before anything is uploaded, so a duplicate reported for
+	 * one language never leaves the files of the previous languages behind.
+	 * Re-uploading the file a language already uses is an update of that file
+	 * and is not reported.
+	 * </p>
+	 *
+	 * @return the message describing the first duplicate found, or
+	 *         <code>null</code> when every uploaded file is new
+	 */
+	private String findDuplicateAttachment(
+		long groupId, String channelName, List<String> languagesName,
+		UploadPortletRequest uploadRequest,
+		Map<String, String> ownAttachNames) {
+
+		for (String languageName : languagesName) {
+			String sourceFileName = uploadRequest.getFileName(
+				languageName + "attachFile");
+
+			File attachedFile = uploadRequest.getFile(
+				languageName + "attachFile");
+
+			if ((sourceFileName == null) || sourceFileName.isEmpty() ||
+				(attachedFile == null) || !attachedFile.exists() ||
+				(attachedFile.length() == 0)) {
+
+				continue;
+			}
+
+			if (sourceFileName.equals(ownAttachNames.get(languageName))) {
+				continue;
+			}
+
+			String attachFolderName =
+				channelName + "_" + languageName + "_attachFile";
+
+			try {
+				Folder folder = _dlAppService.getFolder(
+					groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+					attachFolderName);
+
+				_dlAppService.getFileEntry(
+					groupId, folder.getFolderId(), sourceFileName);
+			}
+			catch (Exception exception) {
+
+				// Either the folder does not exist yet or it holds no file
+				// with that name: nothing to report for this language.
+
+				continue;
+			}
+
+			return "[" + languageName + "] The file \"" + sourceFileName +
+				"\" already exists in \"" + attachFolderName +
+					"\" and cannot be added again for this language.";
+		}
+
+		return null;
 	}
 
 	/**
