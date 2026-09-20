@@ -90,8 +90,10 @@
 			? (List<String>) request.getAttribute("languagesName")
 			: new ArrayList<>();
 
+	// Escaped because the message carries the rejected file name and its
+	// reported content type, neither of which the portal controls.
 	String errorMsg = (String) request.getAttribute("errorMsg") != null
-			? (String) request.getAttribute("errorMsg")
+			? HtmlUtil.escape((String) request.getAttribute("errorMsg"))
 			: "";
 
 	Map<String, String> attachfilesName = (Map<String, String>) request.getAttribute("attachfilesName") != null
@@ -134,7 +136,7 @@
 
 <div>
 	<h3 class="pb-4"><%= isAdd ? "Add New Resource" : "Resource Details" %></h3>
-	<liferay-ui:error key="file-upload-error" message="File upload error" />
+	<liferay-ui:error key="file-upload-error" message="File upload error. Allowed file types: pdf, doc, docx, jpg, jpeg, svg (max 10 MB)." />
 	<liferay-ui:error key="xssDetected" message="Invalid input: special characters are not allowed." />
 	<liferay-ui:error key="notAuthorized" message="You are not authorized to perform this action." />
 	<liferay-ui:error key="error" message="<%=errorMsg%>" />
