@@ -4,11 +4,9 @@ import com.ejada.telemoney.db.constants.TelemoneyConstants;
 import com.ejada.telemoney.resources.constants.TelemoneyResourcesPortletKeys;
 import com.ejada.telemoney.resources.utils.FileValidatorUtil;
 import com.ejada.telemony.db.model.Channels;
-import com.ejada.telemony.db.model.Languages;
 import com.ejada.telemony.db.model.Resource;
 import com.ejada.telemony.db.model.ResourceLocalization;
 import com.ejada.telemony.db.service.ChannelsLocalService;
-import com.ejada.telemony.db.service.LanguagesLocalService;
 import com.ejada.telemony.db.service.ResourceLocalService;
 import com.ejada.telemony.db.service.UserLogsLocalService;
 import com.liferay.document.library.kernel.model.DLFileEntry;
@@ -36,7 +34,6 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,13 +47,12 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
- * Updates an existing Blue App resource.
+ * Replaces the file of an existing Blue App resource with the one picked from
+ * the Edit action of its card.
  *
  * <p>
- * The resource code and the resource type are never changed: the code stays the
- * one generated when the resource was created and the type stays "attachment".
- * A language that is submitted without a new file keeps the attachment of the
- * previous version, and a language that never had one simply stays empty.
+ * Blue App assets are not localized: the new version holds a single English
+ * attachment. The resource code, the type and the page never change.
  * </p>
  */
 @Component(
@@ -71,6 +67,9 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 
 	private static final Log LOG = LogFactoryUtil.getLog(
 		EditBlueAppResourceMVCActionCommand.class);
+
+	private static final String FILE_FIELD =
+		TelemoneyConstants.LANGUAGE_ENGLISH_NAME + "attachFile";
 
 	private static final Pattern XSS_PATTERN = Pattern.compile(".*[<>\"'\\\\].*");
 
@@ -98,6 +97,11 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 			return;
 		}
 
+		// The list is shown again afterwards, on the page being viewed.
+		actionRequest.setAttribute(
+			"selectedFeatureId",
+			ParamUtil.getLong(actionRequest, "selectedFeatureId", 0));
+
 		try {
 			PortletSession pSession = actionRequest.getPortletSession();
 			Long chn = pSession.getAttribute(
@@ -111,11 +115,11 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 			String userName = user.getFullName();
 			String channelName = getChannelName(chn);
 
-			Long resourceId = ParamUtil.getLong(
-				actionRequest, "selectedResourceId", 1);
+			long resourceId = ParamUtil.getLong(
+				actionRequest, "selectedResourceId", 0);
 
-			// The generated resource code must never change for an existing
-			// resource, so it is read back from the stored resource.
+			// The generated resource code and the page must never change for
+			// an existing resource, so they are read back from it.
 			Resource originalResource = _resourcesLocalService.getResource(
 				resourceId);
 
@@ -123,184 +127,135 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 			String resourceType =
 				TelemoneyResourcesPortletKeys.BLUE_APP_RESOURCE_TYPE;
 			String urlType = "";
-			long selectedFeatureId = ParamUtil.getLong(
-				actionRequest, "selectedFeatureId", originalResource.getFeatureId());
+			long featureId = originalResource.getFeatureId();
 
-			List<Languages> languages =
-				_languagesLocalService.getLatestApprovedByChannelId(chn);
+			actionRequest.setAttribute("selectedFeatureId", featureId);
 
-			UploadPortletRequest uploadRequest =
-				PortalUtil.getUploadPortletRequest(actionRequest);
+			// Checked before anything is uploaded, so a locked resource never
+			// leaves a file behind in Documents and Media.
+			if (_resourcesLocalService.hasPendingDraft(
+					originalResource.getEntityResourceId())) {
 
-			Map<String, String> nameValues = new HashMap<>();
-			Map<String, String> attachfilesName = new HashMap<>();
-			Map<String, String> attachValues = new HashMap<>();
-			Map<String, String> descriptionValues = new HashMap<>();
-			Map<String, String> routeIdValues = new HashMap<>();
-			Map<String, String> urlValues = new HashMap<>();
-			List<String> languagesName = new ArrayList<>();
-
-			for (Languages langName : languages) {
-				languagesName.add(langName.getLangName());
-			}
-
-			// A file name is unique inside the folder of its language: the
-			// whole submission is refused before anything is uploaded when one
-			// of the files is already there and is not the one this resource
-			// already uses for that language.
-			Map<String, String> ownAttachNames = new HashMap<>();
-
-			for (String languageName : languagesName) {
-				ownAttachNames.put(
-					languageName,
-					getPreviousAttachName(resourceId, languageName));
-			}
-
-			String duplicateMsg = findDuplicateAttachment(
-				themeDisplay.getScopeGroupId(), channelName, languagesName,
-				uploadRequest, ownAttachNames);
-
-			if (duplicateMsg != null) {
-				actionRequest.setAttribute("errorMsg", duplicateMsg);
-				actionRequest.setAttribute("myView", "add");
-				actionRequest.setAttribute("action", "update");
-				actionRequest.setAttribute("resourceId", resourceId);
-				actionRequest.setAttribute(
-					"selectedFeatureId", selectedFeatureId);
-				SessionErrors.add(actionRequest, "error");
+				reportError(
+					actionRequest,
+					"This resource is currently locked because there is a " +
+						"pending change awaiting approval.");
 
 				return;
 			}
 
-			for (String languageName : languagesName) {
-				File attachedFile = uploadRequest.getFile(
-					languageName + "attachFile");
+			UploadPortletRequest uploadRequest =
+				PortalUtil.getUploadPortletRequest(actionRequest);
 
-				String sourceFileName = uploadRequest.getFileName(
-					languageName + "attachFile");
+			File attachedFile = uploadRequest.getFile(FILE_FIELD);
+			String sourceFileName = uploadRequest.getFileName(FILE_FIELD);
 
-				if (sourceFileName == null) {
-					sourceFileName = "";
-				}
-
-				if (containsXSS(sourceFileName)) {
-					SessionErrors.add(actionRequest, "xssDetected");
-
-					return;
-				}
-
-				// A language may be left completely empty: only upload when a
-				// file was really selected for it.
-				boolean hasUploadedFile =
-					!sourceFileName.isEmpty() && (attachedFile != null) &&
-						attachedFile.exists() && (attachedFile.length() > 0);
-
-				if (!hasUploadedFile) {
-
-					// Keep the file of the previous version, if there was one.
-					sourceFileName = getPreviousAttachName(
-						resourceId, languageName);
-
-					attachfilesName.put(languageName, sourceFileName);
-
-					// The name is not entered by the user: it always follows
-					// the file the language ends up with.
-					nameValues.put(languageName, sourceFileName);
-
-					continue;
-				}
-
-				try {
-					FileValidatorUtil.validateBlueAppAttachmentFile(
-						uploadRequest, languageName + "attachFile");
-				}
-				catch (Exception exception) {
-					LOG.error(
-						"Invalid Blue App attachment for language " +
-							languageName,
-						exception);
-
-					// Keep the user on the same screen, in update mode, with
-					// the reason and the language the rejected file belongs to.
-					actionRequest.setAttribute(
-						"errorMsg",
-						"[" + languageName + "] " + exception.getMessage());
-					actionRequest.setAttribute("myView", "add");
-					actionRequest.setAttribute("action", "update");
-					actionRequest.setAttribute("resourceId", resourceId);
-					actionRequest.setAttribute(
-						"selectedFeatureId", selectedFeatureId);
-					actionRequest.setAttribute(
-						"attachfilesName", attachfilesName);
-					actionRequest.setAttribute("attachValues", attachValues);
-					SessionErrors.add(actionRequest, "error");
-
-					return;
-				}
-
-				attachfilesName.put(languageName, sourceFileName);
-
-				// The name is not entered by the user: it always follows the
-				// file the language ends up with.
-				nameValues.put(languageName, sourceFileName);
-
-				ServiceContext serviceContext = ServiceContextFactory.getInstance(
-					DLFolder.class.getName(), actionRequest);
-
-				long groupId = themeDisplay.getScopeGroupId();
-
-				String attachFolderName =
-					channelName + "_" + languageName + "_attachFile";
-
-				Folder folder;
-
-				try {
-					folder = _dlAppService.getFolder(
-						groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-						attachFolderName);
-				}
-				catch (Exception exception) {
-					folder = _dlAppService.addFolder(
-						"", groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-						attachFolderName, "", serviceContext);
-				}
-
-				ServiceContext serviceContextFile =
-					ServiceContextFactory.getInstance(
-						DLFileEntry.class.getName(), actionRequest);
-
-				FileEntry fileEntry;
-
-				try {
-					fileEntry = _dlAppService.getFileEntry(
-						groupId, folder.getFolderId(), sourceFileName);
-
-					_dlAppService.updateFileEntry(
-						fileEntry.getFileEntryId(), sourceFileName, "",
-						sourceFileName, "", "", "",
-						DLVersionNumberIncrease.MINOR, attachedFile, null, null,
-						serviceContextFile);
-				}
-				catch (Exception exception) {
-					fileEntry = _dlAppService.addFileEntry(
-						groupId, folder.getFolderId(), sourceFileName, "",
-						sourceFileName, "", "", attachedFile,
-						serviceContextFile);
-				}
-
-				String attachURL =
-					"/documents/" + groupId + "/" + folder.getFolderId() + "/" +
-						StringUtil.replace(fileEntry.getTitle(), ' ', '+') + "/";
-
-				attachValues.put(languageName, attachURL);
-
-				// The new file is stored, so the one it replaces can go. This
-				// runs after the upload so a failed upload never loses the
-				// file that is still in use.
-				deleteReplacedAttachment(
-					groupId, resourceId, languageName, sourceFileName,
-					folder.getFolderId());
+			if (sourceFileName == null) {
+				sourceFileName = "";
 			}
+
+			if (containsXSS(sourceFileName)) {
+				SessionErrors.add(actionRequest, "xssDetected");
+
+				return;
+			}
+
+			boolean hasUploadedFile =
+				!sourceFileName.isEmpty() && (attachedFile != null) &&
+					attachedFile.exists() && (attachedFile.length() > 0);
+
+			if (!hasUploadedFile) {
+				reportError(actionRequest, "Please choose the new file.");
+
+				return;
+			}
+
+			try {
+				FileValidatorUtil.validateBlueAppAttachmentFile(
+					uploadRequest, FILE_FIELD);
+			}
+			catch (Exception exception) {
+				LOG.error("Invalid Blue App attachment", exception);
+
+				reportError(actionRequest, exception.getMessage());
+
+				return;
+			}
+
+			long groupId = themeDisplay.getScopeGroupId();
+
+			String attachFolderName =
+				channelName + "_" + TelemoneyConstants.LANGUAGE_ENGLISH_NAME +
+					"_attachFile";
+
+			// A file name is unique inside the folder. Re-uploading the file
+			// the resource already uses is an update of that file, not a
+			// duplicate.
+			String previousAttachName = getPreviousAttachName(resourceId);
+
+			if (!sourceFileName.equals(previousAttachName) &&
+				fileExists(groupId, attachFolderName, sourceFileName)) {
+
+				reportError(
+					actionRequest,
+					"The file \"" + sourceFileName + "\" already exists in \"" +
+						attachFolderName + "\" and cannot be added again.");
+
+				return;
+			}
+
+			ServiceContext serviceContext = ServiceContextFactory.getInstance(
+				DLFolder.class.getName(), actionRequest);
+
+			Folder folder;
+
+			try {
+				folder = _dlAppService.getFolder(
+					groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+					attachFolderName);
+			}
+			catch (Exception exception) {
+				folder = _dlAppService.addFolder(
+					"", groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+					attachFolderName, "", serviceContext);
+			}
+
+			ServiceContext serviceContextFile =
+				ServiceContextFactory.getInstance(
+					DLFileEntry.class.getName(), actionRequest);
+
+			FileEntry fileEntry;
+
+			try {
+				fileEntry = _dlAppService.getFileEntry(
+					groupId, folder.getFolderId(), sourceFileName);
+
+				_dlAppService.updateFileEntry(
+					fileEntry.getFileEntryId(), sourceFileName, "",
+					sourceFileName, "", "", "", DLVersionNumberIncrease.MINOR,
+					attachedFile, null, null, serviceContextFile);
+			}
+			catch (Exception exception) {
+				fileEntry = _dlAppService.addFileEntry(
+					groupId, folder.getFolderId(), sourceFileName, "",
+					sourceFileName, "", "", attachedFile, serviceContextFile);
+			}
+
+			String attachURL =
+				"/documents/" + groupId + "/" + folder.getFolderId() + "/" +
+					StringUtil.replace(fileEntry.getTitle(), ' ', '+') + "/";
+
+			Map<String, String> nameValues = new HashMap<>();
+			Map<String, String> attachfilesName = new HashMap<>();
+			Map<String, String> attachValues = new HashMap<>();
+
+			// The name is not entered by the user: it always follows the file.
+			nameValues.put(
+				TelemoneyConstants.LANGUAGE_ENGLISH_NAME, sourceFileName);
+			attachfilesName.put(
+				TelemoneyConstants.LANGUAGE_ENGLISH_NAME, sourceFileName);
+			attachValues.put(
+				TelemoneyConstants.LANGUAGE_ENGLISH_NAME, attachURL);
 
 			ServiceContext workflowServiceContext =
 				ServiceContextFactory.getInstance(
@@ -311,8 +266,13 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 
 			_resourcesLocalService.updateResource(
 				resourceId, resourceCode, resourceType, urlType, nameValues,
-				attachValues, attachfilesName, descriptionValues, routeIdValues,
-				urlValues, chn, selectedFeatureId, workflowServiceContext, user);
+				attachValues, attachfilesName, new HashMap<>(), new HashMap<>(),
+				new HashMap<>(), chn, featureId, workflowServiceContext, user);
+
+			// Only once the new version is saved, so a refused update never
+			// loses the file that is still in use.
+			deleteReplacedAttachment(
+				groupId, resourceId, sourceFileName, folder.getFolderId());
 
 			String userAction = TelemoneyConstants.USER_ACTION_UPDATE.concat(
 				TelemoneyConstants.getResourceTypeValue(resourceType).concat(
@@ -322,108 +282,25 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 		}
 		catch (Exception exception) {
 			LOG.error("Error while updating a Blue App resource", exception);
-			actionRequest.setAttribute("errorMsg", exception.getMessage());
-			actionRequest.setAttribute("myView", "add");
-			SessionErrors.add(actionRequest, "error");
-		}
-	}
 
-	private String getChannelName(long channelId) {
-		try {
-			Channels channel = _channelsLocalService.fetchChannels(channelId);
-
-			return (channel != null) ? channel.getName() : "";
-		}
-		catch (Exception exception) {
-			LOG.error(
-				"Unable to resolve channel name for channel " + channelId,
-				exception);
-
-			return "";
+			reportError(actionRequest, exception.getMessage());
 		}
 	}
 
 	/**
-	 * Looks for an attachment that is already stored in the folder a language
-	 * uploads to.
+	 * Removes the file the resource used to hold once its replacement has been
+	 * stored, so the resource keeps exactly one file in Documents and Media.
 	 *
 	 * <p>
-	 * The check runs before anything is uploaded, so a duplicate reported for
-	 * one language never leaves the files of the previous languages behind.
-	 * Re-uploading the file a language already uses is an update of that file
-	 * and is not reported.
-	 * </p>
-	 *
-	 * @return the message describing the first duplicate found, or
-	 *         <code>null</code> when every uploaded file is new
-	 */
-	private String findDuplicateAttachment(
-		long groupId, String channelName, List<String> languagesName,
-		UploadPortletRequest uploadRequest,
-		Map<String, String> ownAttachNames) {
-
-		for (String languageName : languagesName) {
-			String sourceFileName = uploadRequest.getFileName(
-				languageName + "attachFile");
-
-			File attachedFile = uploadRequest.getFile(
-				languageName + "attachFile");
-
-			if ((sourceFileName == null) || sourceFileName.isEmpty() ||
-				(attachedFile == null) || !attachedFile.exists() ||
-				(attachedFile.length() == 0)) {
-
-				continue;
-			}
-
-			if (sourceFileName.equals(ownAttachNames.get(languageName))) {
-				continue;
-			}
-
-			String attachFolderName =
-				channelName + "_" + languageName + "_attachFile";
-
-			try {
-				Folder folder = _dlAppService.getFolder(
-					groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-					attachFolderName);
-
-				_dlAppService.getFileEntry(
-					groupId, folder.getFolderId(), sourceFileName);
-			}
-			catch (Exception exception) {
-
-				// Either the folder does not exist yet or it holds no file
-				// with that name: nothing to report for this language.
-
-				continue;
-			}
-
-			return "[" + languageName + "] The file \"" + sourceFileName +
-				"\" already exists in \"" + attachFolderName +
-					"\" and cannot be added again for this language.";
-		}
-
-		return null;
-	}
-
-	/**
-	 * Removes the attachment a language used to hold once its replacement has
-	 * been stored, so a language keeps exactly one file in Documents and Media.
-	 *
-	 * <p>
-	 * The stored attachment is still the previous one here, because the
-	 * resource is only updated after every language has been handled.
+	 * The given resource is the version that was edited, so its localization
+	 * still points at the previous file.
 	 * </p>
 	 */
 	private void deleteReplacedAttachment(
-		long groupId, long resourceId, String languageName,
-		String newAttachName, long newFolderId) {
+		long groupId, long resourceId, String newAttachName, long newFolderId) {
 
 		try {
-			ResourceLocalization previous =
-				_resourcesLocalService.getResourceLocalization(
-					resourceId, languageName);
+			ResourceLocalization previous = getEnglishLocalization(resourceId);
 
 			if (previous == null) {
 				return;
@@ -459,13 +336,60 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 
 			LOG.info(
 				"Deleted the replaced Blue App attachment " +
-					previousAttachName + " of language " + languageName);
+					previousAttachName);
 		}
 		catch (Exception exception) {
 			LOG.warn(
-				"Unable to delete the replaced Blue App attachment of language " +
-					languageName,
+				"Unable to delete the replaced Blue App attachment of resource " +
+					resourceId,
 				exception);
+		}
+	}
+
+	private boolean fileExists(
+		long groupId, String folderName, String fileName) {
+
+		try {
+			Folder folder = _dlAppService.getFolder(
+				groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, folderName);
+
+			_dlAppService.getFileEntry(groupId, folder.getFolderId(), fileName);
+
+			return true;
+		}
+		catch (Exception exception) {
+
+			// Either the folder does not exist yet or it holds no file with
+			// that name.
+
+			return false;
+		}
+	}
+
+	private String getChannelName(long channelId) {
+		try {
+			Channels channel = _channelsLocalService.fetchChannels(channelId);
+
+			return (channel != null) ? channel.getName() : "";
+		}
+		catch (Exception exception) {
+			LOG.error(
+				"Unable to resolve channel name for channel " + channelId,
+				exception);
+
+			return "";
+		}
+	}
+
+	private ResourceLocalization getEnglishLocalization(long resourceId) {
+		try {
+			return _resourcesLocalService.getResourceLocalization(
+				resourceId, TelemoneyConstants.LANGUAGE_ENGLISH_NAME);
+		}
+		catch (Exception exception) {
+			LOG.debug("No English localization for resource " + resourceId);
+
+			return null;
 		}
 	}
 
@@ -489,28 +413,24 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	/**
-	 * File name stored for this language in the previous version, or an empty
-	 * string when the language never had an attachment.
+	 * File name the edited version holds, or an empty string when it has none.
 	 */
-	private String getPreviousAttachName(long resourceId, String languageName) {
-		try {
-			ResourceLocalization resourceLocalization =
-				_resourcesLocalService.getResourceLocalization(
-					resourceId, languageName);
+	private String getPreviousAttachName(long resourceId) {
+		ResourceLocalization localization = getEnglishLocalization(resourceId);
 
-			if ((resourceLocalization != null) &&
-				(resourceLocalization.getAttachName() != null)) {
-
-				return resourceLocalization.getAttachName();
-			}
-		}
-		catch (Exception exception) {
-			LOG.debug(
-				"No previous attachment for resource " + resourceId +
-					" and language " + languageName);
+		if ((localization == null) || (localization.getAttachName() == null)) {
+			return "";
 		}
 
-		return "";
+		return localization.getAttachName();
+	}
+
+	/**
+	 * Shows the reason on the list, above the resources of the page.
+	 */
+	private void reportError(ActionRequest actionRequest, String message) {
+		actionRequest.setAttribute("errorMsg", message);
+		SessionErrors.add(actionRequest, "error");
 	}
 
 	@Reference
@@ -518,9 +438,6 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private DLAppService _dlAppService;
-
-	@Reference
-	private LanguagesLocalService _languagesLocalService;
 
 	@Reference
 	private ResourceLocalService _resourcesLocalService;

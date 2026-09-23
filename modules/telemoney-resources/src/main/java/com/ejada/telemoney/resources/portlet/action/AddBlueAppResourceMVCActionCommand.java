@@ -4,10 +4,8 @@ import com.ejada.telemoney.db.constants.TelemoneyConstants;
 import com.ejada.telemoney.resources.constants.TelemoneyResourcesPortletKeys;
 import com.ejada.telemoney.resources.utils.FileValidatorUtil;
 import com.ejada.telemony.db.model.Channels;
-import com.ejada.telemony.db.model.Languages;
 import com.ejada.telemony.db.model.Resource;
 import com.ejada.telemony.db.service.ChannelsLocalService;
-import com.ejada.telemony.db.service.LanguagesLocalService;
 import com.ejada.telemony.db.service.ResourceLocalService;
 import com.ejada.telemony.db.service.UserLogsLocalService;
 import com.liferay.document.library.kernel.model.DLFileEntry;
@@ -34,8 +32,6 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,20 +45,14 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
- * Adds a new Blue App resource.
+ * Adds a new Blue App resource from the file picked on the list.
  *
  * <p>
- * Blue App resources are always attachments: there is no resource code and no
- * resource type in the UI, but the page (feature) is selected like in the other
- * channels. The resource code defaults to the generated resource id and the
- * attachments are stored per language in
- * {@code channelName_langName_attachFile} folders.
- * </p>
- *
- * <p>
- * Every language stands on its own: a language submitted without a name or
- * without a file does not fall back to the English values and is simply saved
- * empty.
+ * Blue App assets are not localized: a resource holds a single English
+ * attachment, stored in the {@code channelName_English_attachFile} folder.
+ * There is no resource code and no name to enter: the code defaults to the
+ * generated resource id and the name is the uploaded file name. The page
+ * (feature) is the one being viewed on the list.
  * </p>
  */
 @Component(
@@ -77,6 +67,9 @@ public class AddBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 
 	private static final Log LOG = LogFactoryUtil.getLog(
 		AddBlueAppResourceMVCActionCommand.class);
+
+	private static final String FILE_FIELD =
+		TelemoneyConstants.LANGUAGE_ENGLISH_NAME + "attachFile";
 
 	private static final Pattern XSS_PATTERN = Pattern.compile(".*[<>\"'\\\\].*");
 
@@ -104,6 +97,13 @@ public class AddBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 			return;
 		}
 
+		long selectedFeatureId = ParamUtil.getLong(
+			actionRequest, "selectedFeatureId", 0);
+
+		// The list is shown again afterwards, on the page the file was added
+		// to, whether the upload succeeded or not.
+		actionRequest.setAttribute("selectedFeatureId", selectedFeatureId);
+
 		try {
 			PortletSession pSession = actionRequest.getPortletSession();
 			Long chn = pSession.getAttribute(
@@ -117,156 +117,106 @@ public class AddBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 			String userName = user.getFullName();
 			String channelName = getChannelName(chn);
 
-			// Blue App resources are always attachments, are not linked to a
-			// page and the resource code is generated from the resource id.
 			String resourceCode = "";
 			String resourceType =
 				TelemoneyResourcesPortletKeys.BLUE_APP_RESOURCE_TYPE;
 			String urlType = "";
-			long selectedFeatureId = ParamUtil.getLong(
-				actionRequest, "selectedFeatureId", 0);
-
-			List<Languages> languages =
-				_languagesLocalService.getLatestApprovedByChannelId(chn);
 
 			UploadPortletRequest uploadRequest =
 				PortalUtil.getUploadPortletRequest(actionRequest);
 
-			Map<String, String> nameValues = new HashMap<>();
-			Map<String, String> attachfilesName = new HashMap<>();
-			Map<String, String> attachValues = new HashMap<>();
-			Map<String, String> descriptionValues = new HashMap<>();
-			Map<String, String> routeIdValues = new HashMap<>();
-			Map<String, String> urlValues = new HashMap<>();
-			List<String> languagesName = new ArrayList<>();
+			File attachedFile = uploadRequest.getFile(FILE_FIELD);
+			String sourceFileName = uploadRequest.getFileName(FILE_FIELD);
 
-			for (Languages langName : languages) {
-				languagesName.add(langName.getLangName());
+			if (sourceFileName == null) {
+				sourceFileName = "";
 			}
 
-			// A file name is unique inside the folder of its language: the
-			// whole submission is refused before anything is uploaded when one
-			// of the files is already there.
-			String duplicateMsg = findDuplicateAttachment(
-				themeDisplay.getScopeGroupId(), channelName, languagesName,
-				uploadRequest, Collections.<String, String>emptyMap());
-
-			if (duplicateMsg != null) {
-				actionRequest.setAttribute("errorMsg", duplicateMsg);
-				actionRequest.setAttribute("myView", "add");
-				actionRequest.setAttribute("action", "add");
-				actionRequest.setAttribute(
-					"selectedFeatureId", selectedFeatureId);
-				SessionErrors.add(actionRequest, "error");
+			if (containsXSS(sourceFileName)) {
+				SessionErrors.add(actionRequest, "xssDetected");
 
 				return;
 			}
 
-			for (String languageName : languagesName) {
-				File attachedFile = uploadRequest.getFile(
-					languageName + "attachFile");
+			boolean hasUploadedFile =
+				!sourceFileName.isEmpty() && (attachedFile != null) &&
+					attachedFile.exists() && (attachedFile.length() > 0);
 
-				String sourceFileName = uploadRequest.getFileName(
-					languageName + "attachFile");
+			if (!hasUploadedFile) {
+				reportError(actionRequest, "Please choose a file to add.");
 
-				if (sourceFileName == null) {
-					sourceFileName = "";
-				}
-
-				if (containsXSS(sourceFileName)) {
-					SessionErrors.add(actionRequest, "xssDetected");
-
-					return;
-				}
-
-				// The name is not entered by the user: like the resource code,
-				// which defaults to the generated resource id, it is filled in
-				// from the uploaded file name. Each language keeps its own.
-				nameValues.put(languageName, sourceFileName);
-
-				attachfilesName.put(languageName, sourceFileName);
-
-				// A language may be left completely empty: only upload when a
-				// file was really selected for it.
-				boolean hasUploadedFile =
-					!sourceFileName.isEmpty() && (attachedFile != null) &&
-						attachedFile.exists() && (attachedFile.length() > 0);
-
-				if (!hasUploadedFile) {
-					continue;
-				}
-
-				try {
-					FileValidatorUtil.validateBlueAppAttachmentFile(
-						uploadRequest, languageName + "attachFile");
-				}
-				catch (Exception exception) {
-					LOG.error(
-						"Invalid Blue App attachment for language " +
-							languageName,
-						exception);
-
-					// Keep the user on the same screen, with the reason and the
-					// language the rejected file belongs to.
-					actionRequest.setAttribute(
-						"errorMsg",
-						"[" + languageName + "] " + exception.getMessage());
-					actionRequest.setAttribute("myView", "add");
-					actionRequest.setAttribute("action", "add");
-					actionRequest.setAttribute(
-						"selectedFeatureId", selectedFeatureId);
-					actionRequest.setAttribute(
-						"attachfilesName", attachfilesName);
-					actionRequest.setAttribute("attachValues", attachValues);
-					SessionErrors.add(actionRequest, "error");
-
-					return;
-				}
-
-				ServiceContext serviceContext = ServiceContextFactory.getInstance(
-					DLFolder.class.getName(), actionRequest);
-
-				long groupId = themeDisplay.getScopeGroupId();
-
-				String attachFolderName =
-					channelName + "_" + languageName + "_attachFile";
-
-				Folder folder;
-
-				try {
-					folder = _dlAppService.getFolder(
-						groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-						attachFolderName);
-				}
-				catch (Exception exception) {
-					folder = _dlAppService.addFolder(
-						"", groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-						attachFolderName, "", serviceContext);
-				}
-
-				ServiceContext serviceContextFile =
-					ServiceContextFactory.getInstance(
-						DLFileEntry.class.getName(), actionRequest);
-
-				FileEntry fileEntry;
-
-				try {
-					fileEntry = _dlAppService.getFileEntry(
-						groupId, folder.getFolderId(), sourceFileName);
-				}
-				catch (Exception exception) {
-					fileEntry = _dlAppService.addFileEntry(
-						groupId, folder.getFolderId(), sourceFileName, "",
-						sourceFileName, "", "", attachedFile,
-						serviceContextFile);
-				}
-
-				String attachURL =
-					"/documents/" + groupId + "/" + folder.getFolderId() + "/" +
-						StringUtil.replace(fileEntry.getTitle(), ' ', '+') + "/";
-
-				attachValues.put(languageName, attachURL);
+				return;
 			}
+
+			try {
+				FileValidatorUtil.validateBlueAppAttachmentFile(
+					uploadRequest, FILE_FIELD);
+			}
+			catch (Exception exception) {
+				LOG.error("Invalid Blue App attachment", exception);
+
+				reportError(actionRequest, exception.getMessage());
+
+				return;
+			}
+
+			long groupId = themeDisplay.getScopeGroupId();
+
+			String attachFolderName =
+				channelName + "_" + TelemoneyConstants.LANGUAGE_ENGLISH_NAME +
+					"_attachFile";
+
+			// A file name is unique inside the folder: the file is refused
+			// before anything is uploaded when it is already there.
+			if (fileExists(groupId, attachFolderName, sourceFileName)) {
+				reportError(
+					actionRequest,
+					"The file \"" + sourceFileName + "\" already exists in \"" +
+						attachFolderName + "\" and cannot be added again.");
+
+				return;
+			}
+
+			ServiceContext serviceContext = ServiceContextFactory.getInstance(
+				DLFolder.class.getName(), actionRequest);
+
+			Folder folder;
+
+			try {
+				folder = _dlAppService.getFolder(
+					groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+					attachFolderName);
+			}
+			catch (Exception exception) {
+				folder = _dlAppService.addFolder(
+					"", groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+					attachFolderName, "", serviceContext);
+			}
+
+			ServiceContext serviceContextFile =
+				ServiceContextFactory.getInstance(
+					DLFileEntry.class.getName(), actionRequest);
+
+			FileEntry fileEntry = _dlAppService.addFileEntry(
+				groupId, folder.getFolderId(), sourceFileName, "",
+				sourceFileName, "", "", attachedFile, serviceContextFile);
+
+			String attachURL =
+				"/documents/" + groupId + "/" + folder.getFolderId() + "/" +
+					StringUtil.replace(fileEntry.getTitle(), ' ', '+') + "/";
+
+			Map<String, String> nameValues = new HashMap<>();
+			Map<String, String> attachfilesName = new HashMap<>();
+			Map<String, String> attachValues = new HashMap<>();
+
+			// Like the resource code, which defaults to the generated resource
+			// id, the name is filled in from the uploaded file name.
+			nameValues.put(
+				TelemoneyConstants.LANGUAGE_ENGLISH_NAME, sourceFileName);
+			attachfilesName.put(
+				TelemoneyConstants.LANGUAGE_ENGLISH_NAME, sourceFileName);
+			attachValues.put(
+				TelemoneyConstants.LANGUAGE_ENGLISH_NAME, attachURL);
 
 			ServiceContext workflowServiceContext =
 				ServiceContextFactory.getInstance(
@@ -277,8 +227,9 @@ public class AddBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 
 			_resourcesLocalService.addNewResource(
 				resourceCode, resourceType, urlType, nameValues, attachValues,
-				attachfilesName, descriptionValues, routeIdValues, urlValues,
-				chn, selectedFeatureId, workflowServiceContext, user);
+				attachfilesName, new HashMap<>(), new HashMap<>(),
+				new HashMap<>(), chn, selectedFeatureId, workflowServiceContext,
+				user);
 
 			String userAction = TelemoneyConstants.USER_ACTION_ADD.concat(
 				TelemoneyConstants.getResourceTypeValue(resourceType).concat(
@@ -288,74 +239,29 @@ public class AddBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 		}
 		catch (Exception exception) {
 			LOG.error("Error while adding a Blue App resource", exception);
-			actionRequest.setAttribute("errorMsg", exception.getMessage());
-			actionRequest.setAttribute("myView", "add");
-			SessionErrors.add(actionRequest, "error");
+
+			reportError(actionRequest, exception.getMessage());
 		}
 	}
 
-	/**
-	 * Looks for an attachment that is already stored in the folder a language
-	 * uploads to.
-	 *
-	 * <p>
-	 * The check runs before anything is uploaded, so a duplicate reported for
-	 * one language never leaves the files of the previous languages behind.
-	 * Re-uploading the file a language already uses is an update of that file
-	 * and is not reported.
-	 * </p>
-	 *
-	 * @return the message describing the first duplicate found, or
-	 *         <code>null</code> when every uploaded file is new
-	 */
-	private String findDuplicateAttachment(
-		long groupId, String channelName, List<String> languagesName,
-		UploadPortletRequest uploadRequest,
-		Map<String, String> ownAttachNames) {
+	private boolean fileExists(
+		long groupId, String folderName, String fileName) {
 
-		for (String languageName : languagesName) {
-			String sourceFileName = uploadRequest.getFileName(
-				languageName + "attachFile");
+		try {
+			Folder folder = _dlAppService.getFolder(
+				groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, folderName);
 
-			File attachedFile = uploadRequest.getFile(
-				languageName + "attachFile");
+			_dlAppService.getFileEntry(groupId, folder.getFolderId(), fileName);
 
-			if ((sourceFileName == null) || sourceFileName.isEmpty() ||
-				(attachedFile == null) || !attachedFile.exists() ||
-				(attachedFile.length() == 0)) {
-
-				continue;
-			}
-
-			if (sourceFileName.equals(ownAttachNames.get(languageName))) {
-				continue;
-			}
-
-			String attachFolderName =
-				channelName + "_" + languageName + "_attachFile";
-
-			try {
-				Folder folder = _dlAppService.getFolder(
-					groupId, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-					attachFolderName);
-
-				_dlAppService.getFileEntry(
-					groupId, folder.getFolderId(), sourceFileName);
-			}
-			catch (Exception exception) {
-
-				// Either the folder does not exist yet or it holds no file
-				// with that name: nothing to report for this language.
-
-				continue;
-			}
-
-			return "[" + languageName + "] The file \"" + sourceFileName +
-				"\" already exists in \"" + attachFolderName +
-					"\" and cannot be added again for this language.";
+			return true;
 		}
+		catch (Exception exception) {
 
-		return null;
+			// Either the folder does not exist yet or it holds no file with
+			// that name.
+
+			return false;
+		}
 	}
 
 	private String getChannelName(long channelId) {
@@ -373,14 +279,19 @@ public class AddBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
+	/**
+	 * Shows the reason on the list, above the resources of the page.
+	 */
+	private void reportError(ActionRequest actionRequest, String message) {
+		actionRequest.setAttribute("errorMsg", message);
+		SessionErrors.add(actionRequest, "error");
+	}
+
 	@Reference
 	private ChannelsLocalService _channelsLocalService;
 
 	@Reference
 	private DLAppService _dlAppService;
-
-	@Reference
-	private LanguagesLocalService _languagesLocalService;
 
 	@Reference
 	private ResourceLocalService _resourcesLocalService;
