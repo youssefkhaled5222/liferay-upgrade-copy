@@ -195,13 +195,13 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 	}
 
 	/**
-	 * Renders the dedicated Blue App screens.
+	 * Renders the dedicated Blue App screen.
 	 *
 	 * <p>
 	 * Blue App never uses the shared {@code /view.jsp} and {@code /add.jsp}:
-	 * it has its own {@code /blueAppView.jsp} and {@code /blueAppAdd.jsp}
-	 * pages. Resources are always attachments, but the page (feature) is
-	 * selected like in the other channels.
+	 * it has a single {@code /blueAppView.jsp} page. Resources are always one
+	 * English attachment, so there is no add or edit screen: the file is
+	 * picked straight from the list, on the page (feature) being viewed.
 	 * </p>
 	 */
 	private void doBlueAppView(RenderRequest renderRequest, RenderResponse renderResponse, Long chn)
@@ -226,45 +226,27 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 
 		renderRequest.setAttribute("selectedFeatureId", selectedFeatureId);
 
-		if (renderRequest.getAttribute("myView") != null || ParamUtil.getString(renderRequest, "myView") != "") {
-			myView = "blueAppAdd";
+		java.util.Map<Resource, Boolean> resourcesWithPending =
+				_resourcesLocalService.getLatestApprovedByChannelIdWithPending(chn);
 
-			List<Languages> languages = _languagesLocalService.getLatestApprovedByChannelId(chn);
+		renderRequest.setAttribute("resource", new ArrayList<>(resourcesWithPending.keySet()));
+		renderRequest.setAttribute("resourcesWithPending", resourcesWithPending);
 
-			if (languages.isEmpty()) {
-				LOG.warn("The language list is empty for the Blue App channel " + chn);
-			} else {
-				List<String> languagesName = new ArrayList<>();
+		boolean hasPendingImport = _importRequestLocalService.hasPendingImportRequest(Constants.RESOURCE);
+		renderRequest.setAttribute("hasPendingImport", hasPendingImport);
 
-				for (Languages langName : languages) {
-					languagesName.add(langName.getLangName());
-				}
+		PortletSession pSession = renderRequest.getPortletSession();
+		String importParsedResources = (String) pSession.getAttribute("importParsedResources");
 
-				renderRequest.setAttribute("languagesName", languagesName);
-			}
-		} else {
-			java.util.Map<Resource, Boolean> resourcesWithPending =
-					_resourcesLocalService.getLatestApprovedByChannelIdWithPending(chn);
-
-			renderRequest.setAttribute("resource", new ArrayList<>(resourcesWithPending.keySet()));
-			renderRequest.setAttribute("resourcesWithPending", resourcesWithPending);
-
-			boolean hasPendingImport = _importRequestLocalService.hasPendingImportRequest(Constants.RESOURCE);
-			renderRequest.setAttribute("hasPendingImport", hasPendingImport);
-
-			PortletSession pSession = renderRequest.getPortletSession();
-			String importParsedResources = (String) pSession.getAttribute("importParsedResources");
-
-			if (importParsedResources != null) {
-				renderRequest.setAttribute("importParsedResources", importParsedResources);
-				renderRequest.setAttribute("importChannels", pSession.getAttribute("importChannels"));
-				renderRequest.setAttribute("importApprovedPagesByChannel", pSession.getAttribute("importApprovedPagesByChannel"));
-				renderRequest.setAttribute("importApprovedResourcesByChannelAndPage", pSession.getAttribute("importApprovedResourcesByChannelAndPage"));
-				pSession.removeAttribute("importParsedResources");
-				pSession.removeAttribute("importChannels");
-				pSession.removeAttribute("importApprovedPagesByChannel");
-				pSession.removeAttribute("importApprovedResourcesByChannelAndPage");
-			}
+		if (importParsedResources != null) {
+			renderRequest.setAttribute("importParsedResources", importParsedResources);
+			renderRequest.setAttribute("importChannels", pSession.getAttribute("importChannels"));
+			renderRequest.setAttribute("importApprovedPagesByChannel", pSession.getAttribute("importApprovedPagesByChannel"));
+			renderRequest.setAttribute("importApprovedResourcesByChannelAndPage", pSession.getAttribute("importApprovedResourcesByChannelAndPage"));
+			pSession.removeAttribute("importParsedResources");
+			pSession.removeAttribute("importChannels");
+			pSession.removeAttribute("importApprovedPagesByChannel");
+			pSession.removeAttribute("importApprovedResourcesByChannelAndPage");
 		}
 
 		String view = "/" + myView + ".jsp";

@@ -522,6 +522,46 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
     }
 
     /**
+     * Returns the languages a resource of the channel is localized in.
+     *
+     * <p>
+     * Blue App assets are not localized: every version holds a single English
+     * localization, whatever languages the channel has. Every other channel is
+     * localized in its latest approved languages; getbyChannelId is not used
+     * because it returns every row of the Languages table (drafts, rejected and
+     * superseded versions included), which produced duplicated and stale
+     * localizations.
+     * </p>
+     */
+    private List<String> getLocalizedLanguageNames(long channelId) {
+        List<String> languageNames = new ArrayList<>();
+
+        if (isBlueAppChannel(channelId)) {
+            languageNames.add(TelemoneyConstants.LANGUAGE_ENGLISH_NAME);
+
+            return languageNames;
+        }
+
+        for (Languages language : languagesLocalService.getLatestApprovedByChannelId(channelId)) {
+            languageNames.add(language.getLangName());
+        }
+
+        return languageNames;
+    }
+
+    private boolean isBlueAppChannel(long channelId) {
+        try {
+            Channels channel = ChannelsLocalServiceUtil.fetchChannels(channelId);
+
+            return (channel != null) && BLUE_APP_CHANNEL_NAME.equals(channel.getName());
+        } catch (Exception e) {
+            LOG.error("Unable to resolve the channel name for channel " + channelId, e);
+        }
+
+        return false;
+    }
+
+    /**
      * Blue App assets exist only for their resource, so an approved delete also
      * removes the uploaded files from Documents and Media. Other channels keep
      * the previous behaviour and leave their files in place.
@@ -929,15 +969,11 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
             serviceContext.setAddGroupPermissions(true);
             serviceContext.setAddGuestPermissions(true);
 
-            // Only the languages of the target channel are localized by
-            // createResourceEntity, so only their files belong in Documents and
-            // Media. The exporting channel may have more languages than the
-            // target one, and those must not be uploaded.
-            Set<String> channelLanguages = new HashSet<>();
-
-            for (Languages language : languagesLocalService.getLatestApprovedByChannelId(channelId)) {
-                channelLanguages.add(language.getLangName());
-            }
+            // Only the languages createResourceEntity localizes the target
+            // channel in have their files in Documents and Media: the channel
+            // languages, or English alone for Blue App. The exporting channel
+            // may have more languages, and those must not be uploaded.
+            Set<String> channelLanguages = new HashSet<>(getLocalizedLanguageNames(channelId));
 
             for (Map.Entry<String, ResourceImportDTO.LocalizationData> entry : data.getLocalizations().entrySet()) {
                 String languageId = entry.getKey();
@@ -1060,13 +1096,7 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
 
         this.resourcePersistence.update(resourceLocal);
 
-        // Only the latest approved language versions of the channel must be
-        // localized: getbyChannelId returns every row of the Languages table
-        // (drafts, rejected and superseded versions included) which produced
-        // duplicated and stale localizations.
-        for (Languages language : languagesLocalService.getLatestApprovedByChannelId(channelId)) {
-
-            String languageId = language.getLangName();
+        for (String languageId : getLocalizedLanguageNames(channelId)) {
 
             ResourceLocalization resourceLocalized = resourceLocalizationPersistence
                     .create(counterLocalService.increment());

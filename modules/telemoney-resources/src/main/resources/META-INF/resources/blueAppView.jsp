@@ -76,6 +76,8 @@
 <portlet:actionURL name="deleteBlueAppResource" var="deleteBlueAppResource" />
 <portlet:actionURL name="searchBlueAppResource" var="searchBlueAppResource" />
 <portlet:actionURL name="exportResource" var="exportResourceURL" />
+<portlet:actionURL name="addBlueAppResource" var="addBlueAppResourceURL" />
+<portlet:actionURL name="editBlueAppResource" var="editBlueAppResourceURL" />
 
 <%
 	List<Resource> viewResource = (List<Resource>) request.getAttribute("resource") != null
@@ -99,15 +101,13 @@
 
 	// A search that matched nothing must show nothing, not the whole list.
 	boolean searchPerformed = Boolean.TRUE.equals(request.getAttribute("searchPerformed"));
-%>
 
-<%-- Declared after the scriptlet so the page being viewed can be carried over
-	 to the add screen and preselected there. --%>
-<portlet:renderURL var="add_resource">
-	<portlet:param name="myView" value="add" />
-	<portlet:param name="selectedFeatureId"
-		value="<%=String.valueOf(selectedFeatureId)%>" />
-</portlet:renderURL>
+	// Escaped because the message carries the rejected file name and its
+	// reported content type, neither of which the portal controls.
+	String errorMsg = request.getAttribute("errorMsg") != null
+			? HtmlUtil.escape((String) request.getAttribute("errorMsg"))
+			: "";
+%>
 
 <div>
 	<div class="my-4 d-flex justify-content-between align-items-center">
@@ -141,15 +141,16 @@
 	<liferay-ui:error key="noDataToExport" message="No data available to export. Please ensure there are entries to export and try again." />
 	<liferay-ui:error key="zipSizeExceeded" message="Export failed: The generated ZIP file exceeds the 10MB size limit. Please reduce the number of selected items and try again." />
 	<liferay-ui:error key="import-processing-error" message="An error occurred while processing the import. Please check if you uploaded the correct file, then try again."/>
+	<liferay-ui:error key="error" message="<%=errorMsg%>" />
 
 	<div class="card">
 		<div class="card-body">
 			<% if (!isOther) { %>
 			<div class="d-flex justify-content-end">
-				<a href="<%=add_resource%>">
-					<button type="submit" class="btn btn-primary px-5 mr-3">Add
-						New Resource</button>
-				</a>
+				<%-- Opens the file picker: the picked file is added to the page
+					 being viewed. --%>
+				<button type="button" class="btn btn-primary px-5 mr-3"
+					onclick="blueAppBrowse('add', '')">Add New Resource</button>
 			</div>
 			<% } %>
 
@@ -231,6 +232,10 @@
 								<span class="blueapp-card-name<%=hasAttachment ? "" : " text-muted"%>"
 									title="<%=HtmlUtil.escapeAttribute(displayName)%>"><%=HtmlUtil.escape(displayName)%></span>
 
+								<%-- Viewing is the card itself, and a pending resource is
+									 locked until it is reviewed, so the menu is only there
+									 when there is something to change. --%>
+								<% if (!isOther && !isPending) { %>
 								<div class="dropdown blueapp-card-actions">
 									<button class="btn btn-link p-0 text-secondary" type="button"
 										data-toggle="dropdown" aria-haspopup="true"
@@ -243,26 +248,13 @@
 										</svg>
 									</button>
 									<div class="dropdown-menu dropdown-menu-right">
-										<% if (isPending) { %>
-										<a class="dropdown-item"
-											href="<portlet:actionURL name="viewBlueAppResource">
-											<portlet:param name="selectedResourceId" value="<%=String.valueOf(currentResource.getResourceId())%>" />
-											<portlet:param name="action" value="view" />
-											</portlet:actionURL>">View</a>
-										<% } else { %>
-										<a class="dropdown-item"
-											href="<portlet:actionURL name="viewBlueAppResource">
-											<portlet:param name="selectedResourceId" value="<%=String.valueOf(currentResource.getResourceId())%>" />
-											<portlet:param name="action" value="update" />
-											</portlet:actionURL>"><%= isOther ? "View" : "Edit" %></a>
-
-										<% if (!isOther) { %>
+										<a onclick="blueAppBrowse('update', '<%=currentResource.getResourceId()%>')"
+											class="dropdown-item">Edit</a>
 										<a onclick="deleteResource('<%=currentResource.getResourceId()%>')"
-											class="dropdown-item"> Delete </a>
-										<% } %>
-										<% } %>
+											class="dropdown-item">Delete</a>
 									</div>
 								</div>
+								<% } %>
 							</div>
 
 							<div class="blueapp-card-status">
@@ -287,6 +279,46 @@
 				<%
 					}
 				%>
+			</div>
+		</div>
+	</div>
+</div>
+
+<%-- The file picked from "Add New Resource" or from a card's "Edit" is sent
+	 from here, once confirmed. A resource holds a single, English, file. --%>
+<form action="<%=addBlueAppResourceURL%>" method="post"
+	enctype="multipart/form-data" class="d-none"
+	name="<portlet:namespace/>blueAppUploadForm"
+	id="<portlet:namespace/>blueAppUploadForm">
+	<input type="hidden" name="<portlet:namespace/>selectedFeatureId"
+		value="<%=String.valueOf(selectedFeatureId)%>" />
+	<input type="hidden" name="<portlet:namespace/>selectedResourceId"
+		id="<portlet:namespace/>blueAppUploadResourceId" />
+	<input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.svg"
+		name="<portlet:namespace/><%=TelemoneyConstants.LANGUAGE_ENGLISH_NAME%>attachFile"
+		id="<portlet:namespace/>blueAppUploadFile" />
+</form>
+
+<div class="modal hide fade" id="telemoneyUploadModal" tabindex="-1"
+	role="dialog" aria-labelledby="telemoneyUploadModalTitle"
+	aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered w-100" role="document">
+		<div class="modal-content w-auto m-auto">
+			<div class="modal-header">
+				<h5 class="modal-title" id="telemoneyUploadModalTitle">Add Resource</h5>
+				<button type="button" class="close" data-dismiss="modal"
+					aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body text-5 text-center">
+				<span id="telemoneyUploadModalMessage"></span>
+				<div class="font-weight-bold text-break mt-2" id="telemoneyUploadModalFile"></div>
+			</div>
+			<div class="modal-footer justify-content-end">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-primary"
+					onclick="blueAppUploadConfirm()">Confirm</button>
 			</div>
 		</div>
 	</div>
@@ -399,6 +431,94 @@
 			window.open(href, '_blank', 'noopener');
 		}
 	}
+
+	// "Add New Resource" and a card's "Edit" both open the file picker; the
+	// action the picked file is sent to is chosen here. Adding creates a
+	// resource on the page being viewed, editing replaces the file of the
+	// resource.
+	var blueAppUploadAction = 'add';
+	var blueAppUploadSubmitting = false;
+
+	function blueAppBrowse(action, resourceId) {
+		var form = document.getElementById('<portlet:namespace/>blueAppUploadForm');
+		var input = document.getElementById('<portlet:namespace/>blueAppUploadFile');
+
+		blueAppUploadAction = action;
+		form.action = (action === 'update') ? '<%=editBlueAppResourceURL%>' : '<%=addBlueAppResourceURL%>';
+		document.getElementById('<portlet:namespace/>blueAppUploadResourceId').value = resourceId;
+
+		// Cleared first, so picking the same file again still fires "change".
+		input.value = '';
+		input.click();
+	}
+
+	// The "accept" attribute is only a hint for the file picker: it is bypassed
+	// by switching the dialog to "All files". These checks mirror
+	// FileValidatorUtil.validateBlueAppAttachmentFile so a rejected file is
+	// reported before it is sent. The server still validates.
+	var blueAppAllowedExtensions = [ "pdf", "doc", "docx", "jpg", "jpeg", "svg" ];
+	var blueAppMaxFileSize = 10 * 1024 * 1024;
+
+	function validateBlueAppFile(file) {
+		var fileName = file.name || '';
+
+		if ((fileName.split('.').length - 1) !== 1) {
+			alert('The file name must contain exactly one "." character.');
+			return false;
+		}
+
+		var extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+
+		if (blueAppAllowedExtensions.indexOf(extension) === -1) {
+			alert('The file type "' + extension + '" is not allowed. '
+				+ 'Allowed file types: ' + blueAppAllowedExtensions.join(', ') + '.');
+			return false;
+		}
+
+		if (file.size > blueAppMaxFileSize) {
+			alert('The file exceeds the maximum allowed size of 10 MB.');
+			return false;
+		}
+
+		return true;
+	}
+
+	document.getElementById('<portlet:namespace/>blueAppUploadFile').addEventListener('change', function() {
+		if (!this.files || (this.files.length === 0)) {
+			return;
+		}
+
+		var file = this.files[0];
+
+		if (!validateBlueAppFile(file)) {
+			this.value = '';
+			return;
+		}
+
+		var isUpdate = (blueAppUploadAction === 'update');
+
+		document.getElementById('telemoneyUploadModalTitle').textContent =
+			isUpdate ? 'Update Resource' : 'Add Resource';
+		document.getElementById('telemoneyUploadModalMessage').textContent = isUpdate
+			? 'Are you sure you want to replace the file of this resource with:'
+			: 'Are you sure you want to add this resource?';
+		document.getElementById('telemoneyUploadModalFile').textContent = file.name;
+
+		$("#telemoneyUploadModal").modal("show");
+		$("#telemoneyUploadModal").removeClass("hide");
+	});
+
+	function blueAppUploadConfirm() {
+		blueAppUploadSubmitting = true;
+		document.getElementById('<portlet:namespace/>blueAppUploadForm').submit();
+	}
+
+	// Closing the confirmation drops the picked file.
+	$('#telemoneyUploadModal').on('hidden.bs.modal', function(e) {
+		if (!blueAppUploadSubmitting) {
+			document.getElementById('<portlet:namespace/>blueAppUploadFile').value = '';
+		}
+	})
 
 	function clearForm() {
 		document.getElementById('searchInput').value = '';
