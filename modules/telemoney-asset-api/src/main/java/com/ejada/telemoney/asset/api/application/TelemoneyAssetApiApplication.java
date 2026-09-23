@@ -1,7 +1,6 @@
 package com.ejada.telemoney.asset.api.application;
 
 import com.ejada.telemoney.asset.api.constants.AssetVersionConstants;
-import com.ejada.telemoney.db.constants.LanguageValues;
 import com.ejada.telemoney.db.constants.TelemoneyConstants;
 import com.ejada.telemony.db.model.Channels;
 import com.ejada.telemony.db.service.ChannelsLocalService;
@@ -21,7 +20,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 
 import java.util.Collections;
@@ -47,16 +45,15 @@ import org.osgi.service.jaxrs.whiteboard.JaxrsWhiteboardConstants;
  *
  * <p>
  * The assets of a channel are the attachments uploaded from the Resources
- * module. Those attachments are stored in Documents &amp; Media in one folder
- * per channel and language, named {@code channelName_langName_attachFile} (for
- * example {@code Blue App_English_attachFile}).
+ * module. Assets are not localized: each resource holds a single English
+ * file, stored in Documents &amp; Media in the
+ * {@code channelName_English_attachFile} folder (for example
+ * {@code Blue App_English_attachFile}).
  * </p>
  *
  * <p>
- * The caller sends the {@code channel} and the {@code language} headers; the
- * language code (for example {@code en}) is resolved to the language name
- * ({@code English}) and the matching folder is listed through Liferay's
- * {@link DLAppService}.
+ * The caller only sends the {@code channel} header, and that folder is listed
+ * through Liferay's {@link DLAppService}.
  * </p>
  *
  * <p>
@@ -83,14 +80,12 @@ public class TelemoneyAssetApiApplication extends Application {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getAssets(
 		@Context HttpServletRequest request,
-		@HeaderParam("channel") String channel,
-		@HeaderParam("language") String language) {
+		@HeaderParam("channel") String channel) {
 
 		long startTime = System.currentTimeMillis();
 
 		_log.info("------------------- ASSET API -------------------");
 		_log.info("Channel: " + channel);
-		_log.info("Language: " + language);
 
 		JSONObject jsonResponse = JSONFactoryUtil.createJSONObject();
 		JSONObject header = JSONFactoryUtil.createJSONObject();
@@ -105,20 +100,6 @@ public class TelemoneyAssetApiApplication extends Application {
 			header.put(
 				"statusDescription",
 				TelemoneyConstants.STATUS_DESC_MISSING_CHANNEL);
-
-			return Response.status(
-				Response.Status.BAD_REQUEST
-			).entity(
-				jsonResponse.toString()
-			).build();
-		}
-
-		if (language == null) {
-			header.put(
-				"statusCode", TelemoneyConstants.STATUS_CODE_MISSING_LANGUAGE);
-			header.put(
-				"statusDescription",
-				TelemoneyConstants.STATUS_DESC_MISSING_LANGUAGE);
 
 			return Response.status(
 				Response.Status.BAD_REQUEST
@@ -147,15 +128,11 @@ public class TelemoneyAssetApiApplication extends Application {
 				).build();
 			}
 
-			// "en" -> "English": the folders are named after the language name
-			// used by the Resources module.
-
-			String languageName = _resolveLanguageName(language);
-
 			long companyId = PortalUtil.getCompanyId(request);
 
 			String folderName =
-				channels.getName() + "_" + languageName + "_attachFile";
+				channels.getName() + "_" +
+					TelemoneyConstants.LANGUAGE_ENGLISH_NAME + "_attachFile";
 
 			_log.info("Asset folder: " + folderName);
 
@@ -223,19 +200,6 @@ public class TelemoneyAssetApiApplication extends Application {
 				jsonResponse.toString()
 			).build();
 		}
-		catch (IllegalArgumentException illegalArgumentException) {
-			header.put(
-				"statusCode", TelemoneyConstants.STATUS_CODE_UNKNOWN_LANGUAGE);
-			header.put(
-				"statusDescription",
-				TelemoneyConstants.STATUS_DESC_UNKNOWN_LANGUAGE + language);
-
-			return Response.status(
-				Response.Status.BAD_REQUEST
-			).entity(
-				jsonResponse.toString()
-			).build();
-		}
 		catch (Exception exception) {
 			_log.error("Asset API error", exception);
 
@@ -294,17 +258,6 @@ public class TelemoneyAssetApiApplication extends Application {
 		}
 
 		return "";
-	}
-
-	/**
-	 * Resolves a language code ("en", "ar", ...) to the language name used by
-	 * the Resources module ("English", "Arabic", ...).
-	 */
-	private String _resolveLanguageName(String language) {
-		LanguageValues languageValues = LanguageValues.valueOf(
-			StringUtil.toUpperCase(language.trim()));
-
-		return languageValues.getLanguage();
 	}
 
 	private String _stripTrailingSlash(String url) {
