@@ -12,7 +12,6 @@ import com.ejada.telemony.db.service.UserLogsLocalService;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
-import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -52,7 +51,9 @@ import org.osgi.service.component.annotations.Reference;
  *
  * <p>
  * Blue App assets are not localized: the new version holds a single English
- * attachment. The resource code, the type and the page never change.
+ * attachment. The resource code, the type and the page never change. The new
+ * file is stored next to the current one, which stays in use until the change
+ * is reviewed.
  * </p>
  */
 @Component(
@@ -188,14 +189,19 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 				channelName + "_" + TelemoneyConstants.LANGUAGE_ENGLISH_NAME +
 					"_attachFile";
 
-			// A file name is unique inside the folder. Re-uploading the file
-			// the resource already uses is an update of that file, not a
-			// duplicate.
-			String previousAttachName = getPreviousAttachName(resourceId);
+			// A file name is unique inside the folder. That includes the
+			// current file of the resource: it stays in use until the change
+			// is approved, so the new file can never be written over it.
+			if (sourceFileName.equals(getPreviousAttachName(resourceId))) {
+				reportError(
+					actionRequest,
+					"\"" + sourceFileName + "\" is already the file of this " +
+						"resource. Rename the new file to replace it.");
 
-			if (!sourceFileName.equals(previousAttachName) &&
-				fileExists(groupId, attachFolderName, sourceFileName)) {
+				return;
+			}
 
+			if (fileExists(groupId, attachFolderName, sourceFileName)) {
 				reportError(
 					actionRequest,
 					"The file \"" + sourceFileName + "\" already exists in \"" +
@@ -224,22 +230,9 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 				ServiceContextFactory.getInstance(
 					DLFileEntry.class.getName(), actionRequest);
 
-			FileEntry fileEntry;
-
-			try {
-				fileEntry = _dlAppService.getFileEntry(
-					groupId, folder.getFolderId(), sourceFileName);
-
-				_dlAppService.updateFileEntry(
-					fileEntry.getFileEntryId(), sourceFileName, "",
-					sourceFileName, "", "", "", DLVersionNumberIncrease.MINOR,
-					attachedFile, null, null, serviceContextFile);
-			}
-			catch (Exception exception) {
-				fileEntry = _dlAppService.addFileEntry(
-					groupId, folder.getFolderId(), sourceFileName, "",
-					sourceFileName, "", "", attachedFile, serviceContextFile);
-			}
+			FileEntry fileEntry = _dlAppService.addFileEntry(
+				groupId, folder.getFolderId(), sourceFileName, "",
+				sourceFileName, "", "", attachedFile, serviceContextFile);
 
 			String attachURL =
 				"/documents/" + groupId + "/" + folder.getFolderId() + "/" +
@@ -264,15 +257,23 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 			workflowServiceContext.setWorkflowAction(
 				WorkflowConstants.ACTION_PUBLISH);
 
-			_resourcesLocalService.updateResource(
-				resourceId, resourceCode, resourceType, urlType, nameValues,
-				attachValues, attachfilesName, new HashMap<>(), new HashMap<>(),
-				new HashMap<>(), chn, featureId, workflowServiceContext, user);
+			try {
+				_resourcesLocalService.updateResource(
+					resourceId, resourceCode, resourceType, urlType,
+					nameValues, attachValues, attachfilesName, new HashMap<>(),
+					new HashMap<>(), new HashMap<>(), chn, featureId,
+					workflowServiceContext, user);
+			}
+			catch (Exception exception) {
 
-			// Only once the new version is saved, so a refused update never
-			// loses the file that is still in use.
-			deleteReplacedAttachment(
-				groupId, resourceId, sourceFileName, folder.getFolderId());
+				// No version points at the new file, so it must not stay.
+				_dlAppService.deleteFileEntry(fileEntry.getFileEntryId());
+
+				throw exception;
+			}
+
+			// The current file stays until the change is reviewed: approving
+			// it removes the replaced file, rejecting it removes the new one.
 
 			String userAction = TelemoneyConstants.USER_ACTION_UPDATE.concat(
 				TelemoneyConstants.getResourceTypeValue(resourceType).concat(
@@ -284,65 +285,6 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 			LOG.error("Error while updating a Blue App resource", exception);
 
 			reportError(actionRequest, exception.getMessage());
-		}
-	}
-
-	/**
-	 * Removes the file the resource used to hold once its replacement has been
-	 * stored, so the resource keeps exactly one file in Documents and Media.
-	 *
-	 * <p>
-	 * The given resource is the version that was edited, so its localization
-	 * still points at the previous file.
-	 * </p>
-	 */
-	private void deleteReplacedAttachment(
-		long groupId, long resourceId, String newAttachName, long newFolderId) {
-
-		try {
-			ResourceLocalization previous = getEnglishLocalization(resourceId);
-
-			if (previous == null) {
-				return;
-			}
-
-			String previousAttach = previous.getAttach();
-			String previousAttachName = previous.getAttachName();
-
-			if ((previousAttach == null) || previousAttach.isEmpty() ||
-				(previousAttachName == null) || previousAttachName.isEmpty()) {
-
-				return;
-			}
-
-			long previousFolderId = getFolderId(previousAttach);
-
-			if (previousFolderId < 0) {
-				return;
-			}
-
-			// The upload replaced the file in place, so there is nothing left
-			// over to remove.
-			if ((previousFolderId == newFolderId) &&
-				previousAttachName.equals(newAttachName)) {
-
-				return;
-			}
-
-			FileEntry previousFileEntry = _dlAppService.getFileEntry(
-				groupId, previousFolderId, previousAttachName);
-
-			_dlAppService.deleteFileEntry(previousFileEntry.getFileEntryId());
-
-			LOG.info(
-				"Deleted the replaced Blue App attachment " +
-					previousAttachName);
-		}
-		catch (Exception exception) {
-			LOG.warn(
-				"Unable to delete the replaced Blue App attachment of resource " +
-					resourceId,
-				exception);
 		}
 	}
 
@@ -390,25 +332,6 @@ public class EditBlueAppResourceMVCActionCommand extends BaseMVCActionCommand {
 			LOG.debug("No English localization for resource " + resourceId);
 
 			return null;
-		}
-	}
-
-	/**
-	 * Reads the folder from a stored attachment path, which is shaped
-	 * {@code /documents/{groupId}/{folderId}/{title}/}.
-	 */
-	private long getFolderId(String attach) {
-		String[] parts = attach.split("/");
-
-		if (parts.length < 4) {
-			return -1;
-		}
-
-		try {
-			return Long.parseLong(parts[3]);
-		}
-		catch (NumberFormatException numberFormatException) {
-			return -1;
 		}
 	}
 
