@@ -3,27 +3,23 @@ package com.ejada.telemoney.asset.api.application;
 import com.ejada.telemoney.asset.api.constants.AssetVersionConstants;
 import com.ejada.telemoney.db.constants.TelemoneyConstants;
 import com.ejada.telemony.db.model.Channels;
+import com.ejada.telemony.db.model.Resource;
+import com.ejada.telemony.db.model.ResourceLocalization;
 import com.ejada.telemony.db.service.ChannelsLocalService;
 import com.ejada.telemony.db.service.GlobalVersionLocalService;
+import com.ejada.telemony.db.service.ResourceLocalService;
 
-import com.liferay.document.library.kernel.model.DLFolder;
-import com.liferay.document.library.kernel.model.DLFolderConstants;
-import com.liferay.document.library.kernel.service.DLAppService;
-import com.liferay.document.library.kernel.service.DLFolderLocalService;
-import com.liferay.portal.kernel.dao.orm.DynamicQuery;
-import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.URLCodec;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -46,14 +42,15 @@ import org.osgi.service.jaxrs.whiteboard.JaxrsWhiteboardConstants;
  * <p>
  * The assets of a channel are the attachments uploaded from the Resources
  * module. Assets are not localized: each resource holds a single English
- * file, stored in Documents &amp; Media in the
- * {@code channelName_English_attachFile} folder (for example
- * {@code Blue App_English_attachFile}).
+ * localization, and the assets are read from the database, one per latest
+ * approved resource of the channel that has a file.
  * </p>
  *
  * <p>
- * The caller only sends the {@code channel} header, and that folder is listed
- * through Liferay's {@link DLAppService}.
+ * The caller only sends the {@code channel} header. Each asset carries the
+ * resource localization id, the file name without its extension as the key,
+ * the content type resolved from the file name, and the stored attach path
+ * as the url (relative to the portal, no base url).
  * </p>
  *
  * <p>
@@ -130,39 +127,42 @@ public class TelemoneyAssetApiApplication extends Application {
 
 			long companyId = PortalUtil.getCompanyId(request);
 
-			String folderName =
-				channels.getName() + "_" +
-					TelemoneyConstants.LANGUAGE_ENGLISH_NAME + "_attachFile";
-
-			_log.info("Asset folder: " + folderName);
-
 			JSONArray assets = JSONFactoryUtil.createJSONArray();
 
-			DLFolder dlFolder = _fetchFolder(companyId, folderName);
+			// Only the latest approved version of each resource is an asset:
+			// a pending change is not published until it is approved.
+			for (Resource resource :
+					_resourceLocalService.getLatestApprovedByChannelId(
+						channelId)) {
 
-			if (dlFolder == null) {
-				_log.warn(
-					"No Documents & Media folder named " + folderName +
-						" for company " + companyId);
-			}
-			else {
-				String baseUrl = _resolveBaseUrl(request);
+				ResourceLocalization localization =
+					_resourceLocalService.fetchResourceLocalization(
+						resource.getResourceId(),
+						TelemoneyConstants.LANGUAGE_ENGLISH_NAME);
 
-				List<FileEntry> fileEntries = _dlAppService.getFileEntries(
-					dlFolder.getRepositoryId(), dlFolder.getFolderId());
+				if ((localization == null) ||
+					Validator.isNull(localization.getAttach()) ||
+					Validator.isNull(localization.getAttachName())) {
 
-				for (FileEntry fileEntry : fileEntries) {
-					JSONObject asset = JSONFactoryUtil.createJSONObject();
-
-					asset.put("id", "a_" + fileEntry.getFileEntryId());
-					asset.put(
-						"key",
-						FileUtil.stripExtension(fileEntry.getFileName()));
-					asset.put("mimeType", fileEntry.getMimeType());
-					asset.put("url", _buildUrl(baseUrl, fileEntry));
-
-					assets.put(asset);
+					continue;
 				}
+
+				String attachName = localization.getAttachName();
+
+				JSONObject asset = JSONFactoryUtil.createJSONObject();
+
+				asset.put(
+					"id",
+					String.valueOf(localization.getResourceLocalizationId()));
+				asset.put("key", FileUtil.stripExtension(attachName));
+
+				// The type is resolved from the stored file name, which the
+				// upload validation already checked against the content.
+				asset.put(
+					"mimeType", MimeTypesUtil.getContentType(attachName));
+				asset.put("url", localization.getAttach());
+
+				assets.put(asset);
 			}
 
 			// Bumped by the Resources module when a Blue App resource change
@@ -213,61 +213,6 @@ public class TelemoneyAssetApiApplication extends Application {
 		}
 	}
 
-	private String _buildUrl(String baseUrl, FileEntry fileEntry) {
-		StringBuilder sb = new StringBuilder();
-
-		sb.append(baseUrl);
-		sb.append("/documents/");
-		sb.append(fileEntry.getGroupId());
-		sb.append("/");
-		sb.append(fileEntry.getFolderId());
-		sb.append("/");
-		sb.append(URLCodec.encodeURL(fileEntry.getFileName()));
-		sb.append("/");
-		sb.append(fileEntry.getUuid());
-
-		return sb.toString();
-	}
-
-	/**
-	 * Looks the asset folder up by name so no folder id has to be configured.
-	 */
-	private DLFolder _fetchFolder(long companyId, String folderName) {
-		DynamicQuery dynamicQuery = _dlFolderLocalService.dynamicQuery();
-
-		dynamicQuery.add(RestrictionsFactoryUtil.eq("companyId", companyId));
-		dynamicQuery.add(RestrictionsFactoryUtil.eq("name", folderName));
-		dynamicQuery.add(
-			RestrictionsFactoryUtil.eq(
-				"parentFolderId",
-				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID));
-
-		List<DLFolder> dlFolders = _dlFolderLocalService.dynamicQuery(
-			dynamicQuery);
-
-		if (dlFolders.isEmpty()) {
-			return null;
-		}
-
-		return dlFolders.get(0);
-	}
-
-	private String _resolveBaseUrl(HttpServletRequest request) {
-		if (request != null) {
-			return _stripTrailingSlash(PortalUtil.getPortalURL(request));
-		}
-
-		return "";
-	}
-
-	private String _stripTrailingSlash(String url) {
-		if ((url != null) && url.endsWith("/")) {
-			return url.substring(0, url.length() - 1);
-		}
-
-		return url;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		TelemoneyAssetApiApplication.class);
 
@@ -275,13 +220,10 @@ public class TelemoneyAssetApiApplication extends Application {
 	private ChannelsLocalService _channelsLocalService;
 
 	@Reference
-	private DLAppService _dlAppService;
-
-	@Reference
-	private DLFolderLocalService _dlFolderLocalService;
-
-	@Reference
 	private GlobalVersionLocalService _globalVersionLocalService;
+
+	@Reference
+	private ResourceLocalService _resourceLocalService;
 
 }
 
