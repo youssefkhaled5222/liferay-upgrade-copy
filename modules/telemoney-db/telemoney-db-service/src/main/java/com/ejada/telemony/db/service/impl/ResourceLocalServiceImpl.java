@@ -421,6 +421,11 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
                     (Constants.IMPORT + "_" + Constants.UPDATE).equalsIgnoreCase(workflowAction)) {
                 resource.setStatus(status);
                 resourcePersistence.update(resource);
+
+                // The version this one replaces stayed in use until now, so its
+                // file is only removed once the change is approved.
+                deleteReplacedBlueAppAttachments(resource);
+
                 LOG.info("Resource updated and approved: " + resource.getResourceCode());
                 return resource;
             }
@@ -439,6 +444,14 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
         if (status == WorkflowConstants.STATUS_DENIED || status == WorkflowConstants.STATUS_EXPIRED) {
             resource.setStatus(status);
             resourcePersistence.update(resource);
+
+            // A rejected add or update never goes live, so the file it
+            // uploaded is removed and the approved version keeps its own. A
+            // rejected delete uploaded nothing.
+            if (!Constants.DELETE.equalsIgnoreCase(resource.getWorkflowAction())) {
+                deleteRejectedBlueAppAttachments(resource);
+            }
+
             LOG.info("Resource rejected/expired: " + resource.getResourceCode());
         }
 
@@ -594,6 +607,106 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
             LOG.error("Unable to delete the Blue App attachments of resource "
                     + resource.getResourceId(), e);
         }
+    }
+
+    /**
+     * Once an update of a Blue App resource is approved, removes the files of
+     * the versions it replaces.
+     *
+     * <p>
+     * A file is kept while any version that is still current or to come uses
+     * it: the approved version itself, a newer version, or a change waiting for
+     * review.
+     * </p>
+     */
+    private void deleteReplacedBlueAppAttachments(Resource approved) {
+        if (!isBlueAppChannel(approved.getChannelId())) {
+            return;
+        }
+
+        List<Resource> versions = getVersions(approved.getEntityResourceId());
+
+        Set<String> inUse = new HashSet<>();
+
+        for (Resource version : versions) {
+            if ((version.getResourceId() == approved.getResourceId())
+                    || (version.getVersion() > approved.getVersion())
+                    || (version.getStatus() == WorkflowConstants.STATUS_DRAFT)) {
+
+                inUse.addAll(getAttaches(version));
+            }
+        }
+
+        Set<String> deleted = new HashSet<>();
+
+        for (Resource version : versions) {
+            if (version.getVersion() >= approved.getVersion()) {
+                continue;
+            }
+
+            for (ResourceLocalization localization :
+                    resourceLocalizationPersistence.findByResourceId(version.getResourceId())) {
+
+                String attach = localization.getAttach();
+
+                if ((attach == null) || attach.isEmpty() || inUse.contains(attach)
+                        || !deleted.add(attach)) {
+
+                    continue;
+                }
+
+                deleteAttachment(localization);
+            }
+        }
+    }
+
+    /**
+     * Once an add or an update of a Blue App resource is rejected, removes the
+     * file it uploaded, unless another version of the resource uses it.
+     */
+    private void deleteRejectedBlueAppAttachments(Resource rejected) {
+        if (!isBlueAppChannel(rejected.getChannelId())) {
+            return;
+        }
+
+        Set<String> inUse = new HashSet<>();
+
+        for (Resource version : getVersions(rejected.getEntityResourceId())) {
+            if (version.getResourceId() != rejected.getResourceId()) {
+                inUse.addAll(getAttaches(version));
+            }
+        }
+
+        for (ResourceLocalization localization :
+                resourceLocalizationPersistence.findByResourceId(rejected.getResourceId())) {
+
+            String attach = localization.getAttach();
+
+            if ((attach != null) && !attach.isEmpty() && !inUse.contains(attach)) {
+                deleteAttachment(localization);
+            }
+        }
+    }
+
+    private List<Resource> getVersions(long entityResourceId) {
+        DynamicQuery query = DynamicQueryFactoryUtil.forClass(Resource.class, getClassLoader());
+        query.add(RestrictionsFactoryUtil.eq("entityResourceId", entityResourceId));
+
+        return resourceLocalService.dynamicQuery(query);
+    }
+
+    private Set<String> getAttaches(Resource resource) {
+        Set<String> attaches = new HashSet<>();
+
+        for (ResourceLocalization localization :
+                resourceLocalizationPersistence.findByResourceId(resource.getResourceId())) {
+
+            if ((localization.getAttach() != null) && !localization.getAttach().isEmpty()) {
+                attaches.add(localization.getAttach());
+            }
+        }
+
+        return attaches;
     }
 
     /**
@@ -918,15 +1031,38 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
 
                 User user = UserLocalServiceUtil.getUser(importRequest.getUserId());
 
+                // Every check runs before the files are uploaded, so a skipped
+                // entry never leaves files behind, and a skipped entry does not
+                // stop the rest of the import.
+                if ("add".equals(action)) {
+                    List<Resource> result = getByResourceCodeLatestApproved(data.getResourceCode(), channelId);
+                    if (result != null && !result.isEmpty()) {
+                        LOG.error("Skipped the import at index " + i + ": the resource code "
+                                + data.getResourceCode() + " already exists");
+                        continue;
+                    }
+                } else if ("update".equals(action)) {
+                    Resource affected = fetchResource(affectedEntityId);
+
+                    // The approved version must not change under a change that
+                    // is waiting for review.
+                    if (affected != null && hasPendingDraft(affected.getEntityResourceId())) {
+                        LOG.error("Skipped the import at index " + i + ": the resource "
+                                + data.getResourceCode() + " has a pending change awaiting approval");
+                        continue;
+                    }
+                }
+
                 // For attachment-type resources, upload files to DL and update paths
                 if ("2".equals(data.getResourceType()) && !attachmentFiles.isEmpty()) {
-                    uploadAttachmentsFromZip(data, attachmentFiles, user, importRequest, channelId);
+                    if (!uploadAttachmentsFromZip(data, attachmentFiles, user, importRequest, channelId,
+                            "update".equals(action) ? affectedEntityId : 0L)) {
+                        LOG.error("Skipped the import at index " + i + ": its attachment could not be stored");
+                        continue;
+                    }
                 }
 
                 if ("add".equals(action)) {
-                    List<Resource> result = getByResourceCodeLatestApproved(data.getResourceCode(), channelId);
-                    if (result != null && !result.isEmpty())
-                        throw new Exception("The resource code " + data.getResourceCode() + " already exists");
                     try {
                         importResourceAdd(importRequest, data, channelId, user);
                     } catch (Exception e) {
@@ -947,11 +1083,35 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
         }
     }
 
-    private void uploadAttachmentsFromZip(ResourceImportDTO.ResourceData data,
-                                          Map<String, byte[]> attachmentFiles, User user, ImportRequest importRequest,
-                                          long channelId) {
+    /**
+     * Uploads the attachments of an imported resource.
+     *
+     * @param  affectedResourceId the resource an update applies to, or 0 for an
+     *         add
+     * @return <code>false</code> when a Blue App file would overwrite a file
+     *         that another resource uses, in which case the entry must be
+     *         skipped
+     */
+    private boolean uploadAttachmentsFromZip(ResourceImportDTO.ResourceData data,
+                                             Map<String, byte[]> attachmentFiles, User user, ImportRequest importRequest,
+                                             long channelId, long affectedResourceId) {
         if (data.getLocalizations() == null) {
-            return;
+            return true;
+        }
+
+        // A file name is unique inside a Blue App folder: an existing file may
+        // only be replaced by the resource that already uses it.
+        boolean blueApp = isBlueAppChannel(channelId);
+        Set<String> ownAttaches = new HashSet<>();
+
+        if (blueApp && affectedResourceId > 0) {
+            Resource affected = fetchResource(affectedResourceId);
+
+            if (affected != null) {
+                for (Resource version : getVersions(affected.getEntityResourceId())) {
+                    ownAttaches.addAll(getAttaches(version));
+                }
+            }
         }
 
         try {
@@ -994,6 +1154,11 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
 
                 if (fileBytes == null) {
                     LOG.warn("Attachment file not found in ZIP: " + zipEntryPath);
+
+                    if (blueApp) {
+                        return false;
+                    }
+
                     continue;
                 }
                 String folderName = resolveAttachmentFolderName(channelId, languageId);
@@ -1019,6 +1184,17 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
                     FileEntry fileEntry;
                     try {
                         fileEntry = DLAppLocalServiceUtil.getFileEntry(groupId, folder.getFolderId(), sourceFileName);
+
+                        String existingAttach = "/documents/" + groupId + "/" + folder.getFolderId() + "/"
+                                + StringUtil.replace(fileEntry.getTitle(), ' ', '+') + "/";
+
+                        if (blueApp && !ownAttaches.contains(existingAttach)) {
+                            LOG.error("The imported file " + sourceFileName + " already exists in "
+                                    + folderName + " for another resource");
+                            tempFile.delete();
+                            return false;
+                        }
+
                         fileEntry = DLAppLocalServiceUtil.updateFileEntry(user.getUserId(),
                                 fileEntry.getFileEntryId(), sourceFileName,
                                 "", sourceFileName, "", "", "",
@@ -1043,11 +1219,21 @@ public class ResourceLocalServiceImpl extends ResourceLocalServiceBaseImpl {
                 } catch (Exception e) {
                     LOG.error("Failed to upload attachment for resource " + data.getResourceCode()
                             + ", language " + languageId, e);
+
+                    // A Blue App resource is its file: without it, the
+                    // imported version would point at the exporting portal.
+                    if (blueApp) {
+                        return false;
+                    }
                 }
             }
         } catch (Exception e) {
             LOG.error("Error uploading attachments from ZIP for resource " + data.getResourceCode(), e);
+
+            return false;
         }
+
+        return true;
     }
 
     private ResourceImportDTO parseResource(JSONObject entryJson) throws Exception {
