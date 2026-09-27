@@ -218,10 +218,14 @@
 						<%=hasAttachment ? "data-href=\"" + HtmlUtil.escapeAttribute(attachUrl) + "\"" : ""%>
 						onclick="blueAppOpenCard(event, this)">
 						<div class="blueapp-card-preview">
+							<%-- Like the other channels, a resource with a pending change cannot be
+								 exported: the card has no checkbox. --%>
+							<% if (!isPending) { %>
 							<span class="blueapp-card-check export-checkbox-column d-none">
 								<input type="checkbox" class="export-resource-checkbox"
 									value="<%=currentResource.getResourceId()%>" />
 							</span>
+							<% } %>
 
 							<%=buildPreviewMarkup(attachUrl, attachName, hasAttachment)%>
 						</div>
