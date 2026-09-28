@@ -138,9 +138,7 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 				if (renderRequest.getAttribute("selectedFeatureId") != null) {
 					selectedFeatureId = (Long) renderRequest.getAttribute("selectedFeatureId");
 				}
-				if (selectedFeatureId == 0 && !pages.isEmpty()) {
-					selectedFeatureId = pages.get(0).getEntityResourceId();
-				}
+				selectedFeatureId = resolveSelectedFeatureId(pages, selectedFeatureId);
 				renderRequest.setAttribute("selectedFeatureId", selectedFeatureId);
 
 				List<Languages> languages = _languagesLocalService.getLatestApprovedByChannelId(chn);
@@ -160,9 +158,7 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 				renderRequest.setAttribute("pages", pages);
 
 				long selectedFeatureId = ParamUtil.getLong(renderRequest, "selectedFeatureId", 0);
-				if (selectedFeatureId == 0 && !pages.isEmpty()) {
-					selectedFeatureId = pages.get(0).getEntityResourceId();
-				}
+				selectedFeatureId = resolveSelectedFeatureId(pages, selectedFeatureId);
 				renderRequest.setAttribute("selectedFeatureId", selectedFeatureId);
 
 				java.util.Map<Resource, Boolean> resourcesWithPending =
@@ -220,9 +216,7 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 			selectedFeatureId = (Long) renderRequest.getAttribute("selectedFeatureId");
 		}
 
-		if (selectedFeatureId == 0 && !pages.isEmpty()) {
-			selectedFeatureId = pages.get(0).getEntityResourceId();
-		}
+		selectedFeatureId = resolveSelectedFeatureId(pages, selectedFeatureId);
 
 		renderRequest.setAttribute("selectedFeatureId", selectedFeatureId);
 
@@ -252,6 +246,26 @@ public class TelemoneyResourcesPortlet extends MVCPortlet {
 		String view = "/" + myView + ".jsp";
 		PortletRequestDispatcher dispatcher = getPortletContext().getRequestDispatcher(view);
 		dispatcher.include(renderRequest, renderResponse);
+	}
+
+	/**
+	 * Returns the page to show: the requested one when it is a page of the
+	 * current channel, the first page otherwise.
+	 *
+	 * <p>
+	 * The selected page travels in the URL, so switching channel reloads the
+	 * page with the id of a page of the previous channel. Keeping it would
+	 * select no page of the new channel and filter every resource out.
+	 * </p>
+	 */
+	private long resolveSelectedFeatureId(List<Feature> pages, long requestedFeatureId) {
+		for (Feature page : pages) {
+			if (page.getEntityResourceId() == requestedFeatureId) {
+				return requestedFeatureId;
+			}
+		}
+
+		return pages.isEmpty() ? 0 : pages.get(0).getEntityResourceId();
 	}
 
 	public void addResourceLocalized(ActionRequest actionRequest, ActionResponse actionResponse)
