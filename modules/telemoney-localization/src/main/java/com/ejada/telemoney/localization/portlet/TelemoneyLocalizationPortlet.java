@@ -79,6 +79,42 @@ public class TelemoneyLocalizationPortlet extends MVCPortlet {
 
 	private static final Log LOG = LogFactoryUtil.getLog(TelemoneyLocalizationPortlet.class);
 
+	/**
+	 * Returns the page to show: the requested one when it is a page of the
+	 * current channel, the first page otherwise.
+	 *
+	 * <p>
+	 * Liferay keeps the portlet's last render parameters, so switching channel
+	 * from the header renders this portlet again with the page of the previous
+	 * channel. Keeping it would select no page of the new channel and show no
+	 * texts.
+	 * </p>
+	 *
+	 * <p>
+	 * The pages are identified by their featureId, which changes each time a
+	 * page is edited. A featureId of an older version of a page still selects
+	 * that page, through the stable entityResourceId they share.
+	 * </p>
+	 */
+	private long resolveSelectedFeatureId(List<Feature> pages, long requestedFeatureId) {
+		if (pages.isEmpty()) {
+			return 0;
+		}
+
+		Feature requested = (requestedFeatureId > 0)
+				? _featureLocalService.fetchFeature(requestedFeatureId) : null;
+
+		for (Feature page : pages) {
+			if ((page.getFeatureId() == requestedFeatureId)
+					|| ((requested != null) && (page.getEntityResourceId() == requested.getEntityResourceId()))) {
+
+				return page.getFeatureId();
+			}
+		}
+
+		return pages.get(0).getFeatureId();
+	}
+
 	@Override
 	public void doView(RenderRequest renderRequest, RenderResponse renderResponse)
 			throws IOException, PortletException {
@@ -96,10 +132,8 @@ public class TelemoneyLocalizationPortlet extends MVCPortlet {
 			renderRequest.setAttribute("pages", pages);
 
 			// Get selected featureId from request or default to first page
-			long selectedFeatureId = ParamUtil.getLong(renderRequest, "selectedFeatureId", 0);
-			if (selectedFeatureId == 0 && !pages.isEmpty()) {
-				selectedFeatureId = pages.get(0).getFeatureId();
-			}
+			long selectedFeatureId = resolveSelectedFeatureId(
+					pages, ParamUtil.getLong(renderRequest, "selectedFeatureId", 0));
 			renderRequest.setAttribute("selectedFeatureId", selectedFeatureId);
 
 			List<Languages> records = _languageLocalService.getbyChannelId(channelId);
